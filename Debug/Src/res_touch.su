@@ -1,0 +1,2 @@
+res_touch.c:285:6:buttonStateMachine	16	static
+res_touch.c:31:6:ResistiveTouchSampler	16	static

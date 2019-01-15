@@ -1,0 +1,12 @@
+timers.c:835:13:prvSwitchTimerLists	48	static
+timers.c:223:12:xTimerCreateTimerTask	32	static
+timers.c:278:16:xTimerCreate	48	static
+timers.c:381:12:xTimerGenericCommand	32	static
+timers.c:502:13:prvTimerTask	72	static
+timers.c:424:14:xTimerGetTimerDaemonTaskHandle	0	static
+timers.c:433:12:xTimerGetPeriod	0	static
+timers.c:442:12:xTimerGetExpiryTime	0	static
+timers.c:453:14:pcTimerGetName	0	static
+timers.c:945:12:xTimerIsTimerActive	8	static
+timers.c:966:7:pvTimerGetTimerID	8	static
+timers.c:983:6:vTimerSetTimerID	16	static

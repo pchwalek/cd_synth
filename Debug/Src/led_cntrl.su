@@ -1,0 +1,14 @@
+led_cntrl.c:190:6:POV_handler	32	static
+led_cntrl.c:212:6:POV_left	0	static
+led_cntrl.c:280:6:POV_right	0	static
+led_cntrl.c:348:6:POV_Update	32	static
+led_cntrl.c:364:6:runPOV_step	4	static
+led_cntrl.c:377:6:run_message	16	static
+led_cntrl.c:420:6:visualizationRun	16	static
+led_cntrl.c:437:6:transmitToBuffer	8	static
+led_cntrl.c:485:6:POV_LEDs	8	static
+led_cntrl.c:461:6:cyclePOV_LEDs	16	static
+led_cntrl.c:604:6:Set_LEDS	8	static
+led_cntrl.c:616:6:Flush_LEDS	8	static
+led_cntrl.c:628:6:Set_LED	8	static
+led_cntrl.c:644:9:LED_State	0	static

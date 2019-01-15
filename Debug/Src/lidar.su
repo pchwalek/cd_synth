@@ -1,0 +1,11 @@
+lidar.c:32:6:activateLidarLED	0	static
+lidar.c:36:6:deactiveLidarLED	0	static
+lidar.c:40:6:activateLidar	0	static
+lidar.c:45:6:deactivateLidar	0	static
+lidar.c:50:6:genMap	4	static
+lidar.c:54:6:LidarMeasurementHandler	8	static
+lidar.c:68:6:LidarMeasurement	24	static
+lidar.c:217:6:VL53L1_clear_int_and_enable_range	40	static
+lidar.c:227:6:VL53L1_read_meas	64	static
+lidar.c:241:6:lidarStop	8	static
+lidar.c:245:6:lidarStart	8	static

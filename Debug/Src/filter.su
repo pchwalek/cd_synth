@@ -1,0 +1,3 @@
+filter.c:28:6:initFilter	24	static
+filter.c:39:6:setCutoffFreq	32	static
+filter.c:61:6:applyFilter	16	static

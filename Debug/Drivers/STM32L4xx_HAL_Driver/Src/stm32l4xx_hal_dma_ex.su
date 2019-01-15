@@ -1,0 +1,5 @@
+stm32l4xx_hal_dma_ex.c:114:19:HAL_DMAEx_ConfigMuxSync	16	static
+stm32l4xx_hal_dma_ex.c:160:19:HAL_DMAEx_ConfigMuxRequestGenerator	8	static
+stm32l4xx_hal_dma_ex.c:199:19:HAL_DMAEx_EnableMuxRequestGenerator	0	static
+stm32l4xx_hal_dma_ex.c:227:19:HAL_DMAEx_DisableMuxRequestGenerator	0	static
+stm32l4xx_hal_dma_ex.c:255:6:HAL_DMAEx_MUX_IRQHandler	16	static

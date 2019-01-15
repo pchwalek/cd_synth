@@ -1,0 +1,4 @@
+cap_touch.c:20:6:Setup_Cap_Touch	48	static
+cap_touch.c:62:6:Read_Cap_Touch	32	static
+cap_touch.c:75:6:Reset_Cap_INT	32	static
+cap_touch.c:83:6:Sample_Cap_Touch	64	static
