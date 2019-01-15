@@ -87,6 +87,10 @@
 #define HALL_UPPER_THRESH	550
 #define HALL_LOWER_THRESH	430
 #define ADC_SAMPLE_TIME		0.000208
+#define RPS_LED_THRESH		0.080
+
+//define below  to enable BT_UART over FTDI connection
+//#define BT_UART				1
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -99,9 +103,8 @@
 /* USER CODE BEGIN PV */
 volatile uint8_t byte1;
 volatile uint8_t byte3;
-volatile char str[30] = "C,C95A02C57C49\n";
-
-//int16_t CHEBYSHEV_6TH_256_DATA [] =
+//char str[30] = "C,C95A02C57C49\n";
+volatile uint16_t POV_map3 = 0;
 
 /* USER CODE END PV */
 
@@ -166,8 +169,7 @@ int main(void)
   MX_COMP1_Init();
   /* USER CODE BEGIN 2 */
 
-
-  //turn on 3.3V power
+  //turn on 3.3V power for sensors
   HAL_GPIO_WritePin(POWER_SWITCH_GPIO_Port, POWER_SWITCH_Pin, GPIO_PIN_SET);
 
   //enable BT module
@@ -175,173 +177,56 @@ int main(void)
   HAL_GPIO_WritePin(BT_EN_GPIO_Port, BT_EN_Pin, GPIO_PIN_SET);
 
   //  HAL_GPIO_TogglePin(LED_LAT_GPIO_Port, LED_LAT_Pin);
-  	  activateLidar();
-      //HAL_Delay(10000);
+  activateLidar();
 
-    HAL_Delay(1000);
-  //  HAL_GPIO_TogglePin(LED_LAT_GPIO_Port, LED_LAT_Pin);
-  //  	  HAL_Delay(1000);
+  // short delay to give Lidar some time to initialize
+  HAL_Delay(100);
 
-//    uint8_t garb;
-//    HAL_I2C_Mem_Read(&hi2c3, 0xA4, 0xA0, 1, &garb, 1, 10);
+  // enable all shift registers
+  //HAL_GPIO_WritePin(LED_PWM_GPIO_Port, LED_PWM_Pin, GPIO_PIN_RESET);
+  HAL_TIM_Base_Start(&htim1);
+  HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
 
-    // enable all shift registers
-    //HAL_GPIO_WritePin(LED_PWM_GPIO_Port, LED_PWM_Pin, GPIO_PIN_RESET);
-    HAL_TIM_Base_Start(&htim1);
-    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);
-  //  HAL_TIM_Base_Start(&htim16);
-  //  HAL_TIM_Base_Start_IT(&htim17);
+  Setup_Cap_Touch();
 
-    Setup_Cap_Touch();
+  // below is needed to ensure proper rounds-per-second is calculated for the POV display
+  /* DWT struct is defined inside the core_cm4.h file */
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  //DWT->LAR = 0xC5ACCE55;
+  DWT->CYCCNT = 0; // reset the counter
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk; // enable the counter
 
-	/* DWT struct is defined inside the core_cm4.h file */
-    CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
-    //DWT->LAR = 0xC5ACCE55;
-	DWT->CYCCNT = 0; // reset the counter
-	DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk; // enable the counter
+  HAL_TIM_Base_Start(&htim6);
 
-    HAL_TIM_Base_Start(&htim6);
-    //HAL_TIM_Base_Start(&htim3);
+  // DAC DMA
+  HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
+  //    HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
+  //    HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 0x100);
 
-    // DAC triangle wave generation
-    //HAL_DACEx_TriangleWaveGenerate(&hdac1, DAC_CHANNEL_1, DAC_TRIANGLEAMPLITUDE_4095);
-    //HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, 0x100);
-    //HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
+  // prep an initial buffer for DAC
+  prepBuffer(&hdac1);
 
-    // DAC DMA
-    HAL_DAC_Start(&hdac1, DAC_CHANNEL_1);
-    HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
-    HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 0x100);
+  // turn off all LEDs (ensures no weird states on startup)
+  Flush_LEDS();
 
-    prepBuffer(&hdac1);
+#ifdef BT_UART
+  HAL_GPIO_WritePin(BT_CMD_GPIO_Port, BT_CMD_Pin, GPIO_PIN_SET);
+  HAL_UART_Receive_IT(&huart3, &byte3, 1);
+  HAL_UART_Receive_IT(&huart1, &byte1, 1);
+#endif
 
-    // turn off LEDs
-    Flush_LEDS();
+  //    // set hall effect to HIGH (its 6.25kHz if set high and 24Hz when low)
+  HAL_GPIO_WritePin(HALL_CNTRL_GPIO_Port, HALL_CNTRL_Pin, GPIO_PIN_SET);
+  //
+  //    // enable ADC
+  //    ADC_Enable(&hadc1);
+  //    HAL_ADC_Start_IT(&hadc1);
 
-    //HAL_Delay(3000);
-    //uint8_t tem = 3;
+  initFilter();
 
-    HAL_GPIO_WritePin(BT_CMD_GPIO_Port, BT_CMD_Pin, GPIO_PIN_SET);
-    HAL_UART_Receive_IT(&huart3, &byte3, 1);
-    HAL_UART_Receive_IT(&huart1, &byte1, 1);
+  // start comparator for HALL effect sensor
+  HAL_COMP_Start(&hcomp1);
 
-//    char str11[50] = "+\n";
-//        	HAL_UART_Transmit(&huart1, (uint8_t*) str11, sizeof(str11), 50);
-//        	HAL_UART_Transmit(&huart3, (uint8_t*) str11, sizeof(str11), 50);
-//        	HAL_Delay(1000);
-//
-//    char str1[50] = "GM\n";
-//    	HAL_UART_Transmit(&huart1, (uint8_t*) str1, sizeof(str1), 50);
-//    	HAL_UART_Transmit(&huart3, (uint8_t*) str1, sizeof(str1), 50);
-//    	HAL_Delay(1000);
-//    volatile char cheb[10];
-//    volatile int16_t transfer;
-//
-//    char str1[50] = "\n{";
-//    char comma[5] = ",";
-//    HAL_UART_Transmit(&huart3, (uint8_t*) str1, sizeof(str1), 50);
-//
-//    for(int16_t i = 0; i < (sizeof(CHEBYSHEV_6TH_256_DATA)/2); i++){
-//    	transfer = (CHEBYSHEV_6TH_256_DATA[i]) + 128;
-//    	itoa(transfer, cheb, 10);
-//
-//    	if(transfer == 640){
-//    		transfer = 0;
-//    	}
-//
-//    	//cheb = CHEBYSHEV_6TH_256_DATA[i];
-//    	HAL_UART_Transmit(&huart3, (uint8_t*) cheb, 3, 50);
-//    	HAL_UART_Transmit(&huart3, (uint8_t*) comma, sizeof(comma), 50);
-//    }
-//
-//    char str4[50] = "}\n";
-//    HAL_UART_Transmit(&huart3, (uint8_t*) str4, sizeof(str4), 50);
-
-//    while(1){
-//    char str1[50] = "GM";
-//	HAL_UART_Transmit(&huart1, (uint8_t*) str1, sizeof(str1), 50);
-//	HAL_UART_Transmit(&huart3, (uint8_t*) str1, sizeof(str1), 50);
-//	HAL_Delay(1000);
-//    }
-////
-//    char str[50] = "SM,1F\n";
-//    HAL_UART_Transmit(&huart1, (uint8_t*) str, sizeof(str), 50);
-//    HAL_UART_Transmit(&huart3, (uint8_t*) str, sizeof(str), 50);
-//	HAL_Delay(1000);
-//
-//    char str2[50] = "R,1\n";
-//        HAL_UART_Transmit(&huart1, (uint8_t*) str2, sizeof(str2), 50);
-//        HAL_UART_Transmit(&huart3, (uint8_t*) str2, sizeof(str2), 50);
-//    	HAL_Delay(10000);
-//
-//    	char str3[50] = "AV+\n";
-//    	    HAL_UART_Transmit(&huart1, (uint8_t*) str3, sizeof(str3), 50);
-//    	    HAL_UART_Transmit(&huart3, (uint8_t*) str3, sizeof(str3), 50);
-//    		HAL_Delay(1000);
-//    		HAL_UART_Transmit(&huart1, (uint8_t*) str3, sizeof(str3), 50);
-//			HAL_UART_Transmit(&huart3, (uint8_t*) str3, sizeof(str3), 50);
-//			HAL_Delay(1000);
-//			HAL_UART_Transmit(&huart1, (uint8_t*) str3, sizeof(str3), 50);
-//			HAL_UART_Transmit(&huart3, (uint8_t*) str3, sizeof(str3), 50);
-//			HAL_Delay(1000);
-
-//    while(tem--){
-//		HAL_Delay(1000);
-//
-//    }
-    //HAL_GPIO_WritePin(BT_CMD_GPIO_Port, BT_CMD_Pin, GPIO_PIN_SET);
-
-//
-//    HAL_Delay(2000);
-//    while(1){
-//    	HAL_UART_Transmit(&huart1, (uint8_t*) str, sizeof(str), 50);
-//    	HAL_UART_Transmit(&huart3, (uint8_t*) str, sizeof(str), 50);
-//    	HAL_Delay(5000);
-//    }
-    //cyclePOV_LEDs(500);
-
-//    char str[50];// = "GeeksforGeeks\n";
-//    while(1) {
-//    	char str[4];
-//    	HAL_UART_Receive(&huart3, (uint8_t*) str, sizeof(str), 50);
-//    	HAL_UART_Transmit(&huart3, (uint8_t*) str, sizeof(str), 50);
-//    	//HAL_Delay(10);
-//    }
-
-
-//    // set hall effect to HIGH (its 6.25kHz if set high and 24Hz when low)
-    HAL_GPIO_WritePin(HALL_CNTRL_GPIO_Port, HALL_CNTRL_Pin, GPIO_PIN_SET);
-//
-//    // enable ADC
-//    ADC_Enable(&hadc1);
-//    HAL_ADC_Start_IT(&hadc1);
-
-
-//    volatile uint32_t temp_adc;
-//    char temp_buf2[10];
-//    uint8_t temp_buf[8];
-//    while(1){
-////    	if (HAL_ADC_PollForConversion(&hadc1, 1000000) == HAL_OK){
-////    	temp_adc = HAL_ADC_GetValue(&hadc1);
-////
-////    	itoa(temp_adc, temp_buf2, 10);
-////
-////    	HAL_UART_Transmit(&huart3, (uint8_t*) temp_buf2, sizeof(temp_buf2), 10);
-////    	char str[5] = "\n\r";
-////    	HAL_UART_Transmit(&huart3, (uint8_t*) str, sizeof(str), 10);
-////    	HAL_Delay(500);
-////    	}
-//    	HAL_Delay(500);
-//    }
-
-    initFilter();
-
-//    while(1){
-//
-//    }
-
-    HAL_COMP_Start(&hcomp1);
-    //HAL_COMP_Start(&hcomp2);
   /* USER CODE END 2 */
 
   /* Call init function for freertos objects (in freertos.c) */
@@ -438,119 +323,111 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-volatile uint32_t temp_adc;
-char temp_buf2[10];
-uint32_t temp_time;
+//volatile uint32_t temp_adc;
+//char temp_buf2[10];
+//uint32_t temp_time;
 
 
-volatile uint32_t curr_ADC_sample = 0;
-volatile uint32_t prev_ADC_sample = 0;
-
-
-volatile uint8_t quarter_spin_up 	= 	0;
-volatile uint8_t quarter_spin_down 	= 	0;
-volatile float RPS 					= 	0;
-
-void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
-{
-	curr_ADC_sample++;
-  if (__HAL_ADC_GET_FLAG(hadc, ADC_FLAG_EOC))
-    {
-	//temp_time = HAL_GetTick();
-
-	temp_adc = HAL_ADC_GetValue(hadc);
-	if(temp_adc > HALL_UPPER_THRESH){
-		if(quarter_spin_up == 0){
-			quarter_spin_up = 1;
-
-			RPS = (curr_ADC_sample - prev_ADC_sample) * ((float) ADC_SAMPLE_TIME) * 4;
-			prev_ADC_sample = curr_ADC_sample;
-			RPS_LED();
-		}
-//		char str[20] = "UPPER\n\r";
-//		HAL_UART_Transmit(&huart3, (uint8_t*) str, sizeof(str), 10);
-	}
-	else if (temp_adc < HALL_LOWER_THRESH){
-		if(quarter_spin_down == 0){
-			quarter_spin_down = 1;
-
-			RPS = (curr_ADC_sample - prev_ADC_sample) * ((float) ADC_SAMPLE_TIME) * 4;
-			prev_ADC_sample = curr_ADC_sample;
-			RPS_LED();
-		}
-//		char str[20] = "LOWER\n\r";
-//		HAL_UART_Transmit(&huart3, (uint8_t*) str, sizeof(str), 10);
-	}
-	else{
-		quarter_spin_up = 0;
-		quarter_spin_down = 0;
-	}
-	//RPS = ((float) temp_adc) / ADC_SAMPLE_TIME;
-
+//volatile uint32_t curr_ADC_sample = 0;
+//volatile uint32_t prev_ADC_sample = 0;
 //
-	itoa(temp_adc, temp_buf2, 10);
-	HAL_UART_Transmit(&huart3, (uint8_t*) temp_buf2, sizeof(temp_buf2), 10);
-	char str[5] = "\n\r";
-	HAL_UART_Transmit(&huart3, (uint8_t*) str, sizeof(str), 10);
-    }
-}
+//
+//volatile uint8_t quarter_spin_up 	= 	0;
+//volatile uint8_t quarter_spin_down 	= 	0;
+//volatile float RPS 					= 	0;
 
-#define RPS_LED_THRESH		0.080
+//void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
+//{
+//	curr_ADC_sample++;
+//  if (__HAL_ADC_GET_FLAG(hadc, ADC_FLAG_EOC))
+//    {
+//
+//	temp_adc = HAL_ADC_GetValue(hadc);
+//	if(temp_adc > HALL_UPPER_THRESH){
+//		if(quarter_spin_up == 0){
+//			quarter_spin_up = 1;
+//
+//			RPS = (curr_ADC_sample - prev_ADC_sample) * ((float) ADC_SAMPLE_TIME) * 4;
+//			prev_ADC_sample = curr_ADC_sample;
+//			RPS_LED();
+//		}
+//
+//	}
+//	else if (temp_adc < HALL_LOWER_THRESH){
+//		if(quarter_spin_down == 0){
+//			quarter_spin_down = 1;
+//
+//			RPS = (curr_ADC_sample - prev_ADC_sample) * ((float) ADC_SAMPLE_TIME) * 4;
+//			prev_ADC_sample = curr_ADC_sample;
+//			RPS_LED();
+//		}
+//
+//	}
+//	else{
+//		quarter_spin_up = 0;
+//		quarter_spin_down = 0;
+//	}
+//
+//	itoa(temp_adc, temp_buf2, 10);
+//	HAL_UART_Transmit(&huart3, (uint8_t*) temp_buf2, sizeof(temp_buf2), 10);
+//	char str[5] = "\n\r";
+//	HAL_UART_Transmit(&huart3, (uint8_t*) str, sizeof(str), 10);
+//    }
+//}
 
-void RPS_LED(void){
-	if(RPS < RPS_LED_THRESH){
-		ledOut2(1);
-	}
-	else if(RPS < (2*RPS_LED_THRESH)){
-		ledOut2(2);
-	}
-	else if(RPS < (3*RPS_LED_THRESH)){
-		ledOut2(3);
-		}
-	else if(RPS < (4*RPS_LED_THRESH)){
-		ledOut2(4);
-		}
-	else if(RPS < (5*RPS_LED_THRESH)){
-		ledOut2(5);
-		}
-	else if(RPS < (6*RPS_LED_THRESH)){
-		ledOut2(6);
-		}
-	else if(RPS < (7*RPS_LED_THRESH)){
-		ledOut2(7);
-		}
-	else if(RPS < (8*RPS_LED_THRESH)){
-		ledOut2(8);
-		}
-	else if(RPS < (9*RPS_LED_THRESH)){
-		ledOut2(9);
-		}
-	else if(RPS < (10*RPS_LED_THRESH)){
-		ledOut2(10);
-		}
-	else if(RPS < (11*RPS_LED_THRESH)){
-		ledOut2(11);
-		}
-	else if(RPS < (12*RPS_LED_THRESH)){
-		ledOut2(12);
-			}
-	else if(RPS < (13*RPS_LED_THRESH)){
-		ledOut2(13);
-			}
-	else if(RPS < (14*RPS_LED_THRESH)){
-		ledOut2(14);
-			}
-	else if(RPS < (15*RPS_LED_THRESH)){
-		ledOut2(15);
-	}
-}
 
-//uint8_t temp;
+//void RPS_LED(void){
+//	if(RPS < RPS_LED_THRESH){
+//		ledOut2(1);
+//	}
+//	else if(RPS < (2*RPS_LED_THRESH)){
+//		ledOut2(2);
+//	}
+//	else if(RPS < (3*RPS_LED_THRESH)){
+//		ledOut2(3);
+//		}
+//	else if(RPS < (4*RPS_LED_THRESH)){
+//		ledOut2(4);
+//		}
+//	else if(RPS < (5*RPS_LED_THRESH)){
+//		ledOut2(5);
+//		}
+//	else if(RPS < (6*RPS_LED_THRESH)){
+//		ledOut2(6);
+//		}
+//	else if(RPS < (7*RPS_LED_THRESH)){
+//		ledOut2(7);
+//		}
+//	else if(RPS < (8*RPS_LED_THRESH)){
+//		ledOut2(8);
+//		}
+//	else if(RPS < (9*RPS_LED_THRESH)){
+//		ledOut2(9);
+//		}
+//	else if(RPS < (10*RPS_LED_THRESH)){
+//		ledOut2(10);
+//		}
+//	else if(RPS < (11*RPS_LED_THRESH)){
+//		ledOut2(11);
+//		}
+//	else if(RPS < (12*RPS_LED_THRESH)){
+//		ledOut2(12);
+//			}
+//	else if(RPS < (13*RPS_LED_THRESH)){
+//		ledOut2(13);
+//			}
+//	else if(RPS < (14*RPS_LED_THRESH)){
+//		ledOut2(14);
+//			}
+//	else if(RPS < (15*RPS_LED_THRESH)){
+//		ledOut2(15);
+//	}
+//}
+
 void HAL_COMP_TriggerCallback(COMP_HandleTypeDef *hcomp){
 	HALL_Handler();
 }
 
-volatile uint16_t 		POV_map3	=	0;
 
 void ledOut2(int8_t shift){
 	POV_map3 = 0x0001 << (( shift) % 15);
@@ -598,22 +475,6 @@ void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
 	}
 }
 
-
-// called at 200kHz
-void indexIncrementor(void){
-	//timer_incrementor++;
-	//HAL_GPIO_TogglePin(LED_LAT_GPIO_Port, LED_LAT_Pin);
-//	if (index_1 >= 0){
-//		if( (timer_incrementor % index_1_rate) == 0){
-//			index_1++;
-//			if(index_1 > 255){
-//				index_1 = 0;
-//			}
-//			//HAL_GPIO_TogglePin(LED_LAT_GPIO_Port, LED_LAT_Pin);
-//		}
-//	}
-}
-
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   if (huart->Instance == USART3)
@@ -626,14 +487,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
     //HAL_UART_Transmit(&huart3, "transmitting to BT module\n", sizeof("transmitting to BT module\n"), 100);
 
-    if (byte3 == '?'){
-//        	HAL_UART_Transmit(&huart3, "  --MENU--  \n", sizeof("  --MENU--  \n"), 100);
-//        	HAL_UART_Transmit(&huart3, "m: enter BT MAC\n", sizeof("m: enter BT MAC\n"), 100);
-        }
-
-//    if (byte == 'm'){
-//    	HAL_UART_Transmit(&huart3, "RECEIVED M\n", sizeof("RECEIVED M\n"), 100);
-//    }
+//    if (byte3 == '?'){
+////        	HAL_UART_Transmit(&huart3, "  --MENU--  \n", sizeof("  --MENU--  \n"), 100);
+////        	HAL_UART_Transmit(&huart3, "m: enter BT MAC\n", sizeof("m: enter BT MAC\n"), 100);
+//        }
+//
+////    if (byte == 'm'){
+////    	HAL_UART_Transmit(&huart3, "RECEIVED M\n", sizeof("RECEIVED M\n"), 100);
+////    }
   }
 
   if (huart->Instance == USART1)
@@ -644,14 +505,14 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
      /* Receive one byte in interrupt mode */
      HAL_UART_Receive_IT(&huart1, &byte1, 1);
 
-     if (byte1 == '?'){
- //        	HAL_UART_Transmit(&huart3, "  --MENU--  \n", sizeof("  --MENU--  \n"), 100);
- //        	HAL_UART_Transmit(&huart3, "m: enter BT MAC\n", sizeof("m: enter BT MAC\n"), 100);
-         }
-
-//     if (byte == 'm'){
-//     	HAL_UART_Transmit(&huart3, "RECEIVED M\n", sizeof("RECEIVED M\n"), 100);
-//     }
+//     if (byte1 == '?'){
+// //        	HAL_UART_Transmit(&huart3, "  --MENU--  \n", sizeof("  --MENU--  \n"), 100);
+// //        	HAL_UART_Transmit(&huart3, "m: enter BT MAC\n", sizeof("m: enter BT MAC\n"), 100);
+//         }
+//
+////     if (byte == 'm'){
+////     	HAL_UART_Transmit(&huart3, "RECEIVED M\n", sizeof("RECEIVED M\n"), 100);
+////     }
    }
 }
 
@@ -675,11 +536,11 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
   }
   /* USER CODE BEGIN Callback 1 */
   else if (htim->Instance == TIM3) {
-	  POV_Update();
-    }
+    POV_Update();
+  }
   else if (htim->Instance == TIM4) {
-	  enable_buttons();
-    }
+    enable_buttons();
+  }
 //  else if (htim->Instance == TIM6) {
 //	  HAL_GPIO_TogglePin(LED_LAT_GPIO_Port, LED_LAT_Pin);
 //    }

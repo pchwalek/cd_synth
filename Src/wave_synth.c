@@ -83,12 +83,12 @@ int32_t index_10 = 0;
 int32_t index_11 = 0;
 int32_t index_12 = 0;
 
-volatile q15_t temp[BUFFER_SIZE];
+q15_t temp[BUFFER_SIZE];
 
 //const uint16_t *waveTable_1 = SinTable;
 //const char *waveTable_2 = SawTable;
 //const char *waveTable_3 = RampTable;
-volatile uint16_t *waveTable;
+uint16_t *waveTable;
 
 
 const uint16_t sine_wave_array[32] = {2047, 1648, 1264, 910, 600,  345,
@@ -98,90 +98,90 @@ const uint16_t sine_wave_array[32] = {2047, 1648, 1264, 910, 600,  345,
                    4095, 4056, 3939, 3750, 3495, 3185,
                    2831, 2447};
 
-volatile q15_t buffer_1[BUFFER_SIZE];
-volatile q15_t buffer_2[BUFFER_SIZE];
-volatile q15_t buffer_3[BUFFER_SIZE];
+q15_t buffer_1[BUFFER_SIZE];
+q15_t buffer_2[BUFFER_SIZE];
+q15_t buffer_3[BUFFER_SIZE];
 
-volatile q15_t filtered_buffer_1[BUFFER_SIZE];
-volatile q15_t filtered_buffer_2[BUFFER_SIZE];
-volatile q15_t filtered_buffer_3[BUFFER_SIZE];
+q15_t filtered_buffer_1[BUFFER_SIZE];
+q15_t filtered_buffer_2[BUFFER_SIZE];
+q15_t filtered_buffer_3[BUFFER_SIZE];
 
-volatile q15_t shifted_buffer_1[BUFFER_SIZE];
-volatile q15_t shifted_buffer_2[BUFFER_SIZE];
-volatile q15_t shifted_buffer_3[BUFFER_SIZE];
+q15_t shifted_buffer_1[BUFFER_SIZE];
+q15_t shifted_buffer_2[BUFFER_SIZE];
+q15_t shifted_buffer_3[BUFFER_SIZE];
 
-volatile uint8_t buff_toggle = 0;
-volatile int16_t max_table_index = 255;
-volatile uint8_t octave = 4;
-//volatile uint8_t wave = 1;
+uint8_t buff_toggle = 0;
+int16_t max_table_index = 255;
+uint8_t octave = 4;
+//uint8_t wave = 1;
 
-volatile float freq_1_inc;
-volatile float freq_2_inc;
-volatile float freq_3_inc;
-volatile float freq_4_inc;
-volatile float freq_5_inc;
-volatile float freq_6_inc;
-volatile float freq_7_inc;
-volatile float freq_8_inc;
-volatile float freq_9_inc;
-volatile float freq_10_inc;
-volatile float freq_11_inc;
-volatile float freq_12_inc;
+float freq_1_inc;
+float freq_2_inc;
+float freq_3_inc;
+float freq_4_inc;
+float freq_5_inc;
+float freq_6_inc;
+float freq_7_inc;
+float freq_8_inc;
+float freq_9_inc;
+float freq_10_inc;
+float freq_11_inc;
+float freq_12_inc;
 
-volatile float freq_1_ind = 0;
-volatile float freq_2_ind = 0;
-volatile float freq_3_ind = 0;
-volatile float freq_4_ind = 0;
-volatile float freq_5_ind = 0;
-volatile float freq_6_ind = 0;
-volatile float freq_7_ind = 0;
-volatile float freq_8_ind = 0;
-volatile float freq_9_ind = 0;
-volatile float freq_10_ind = 0;
-volatile float freq_11_ind = 0;
-volatile float freq_12_ind = 0;
+float freq_1_ind = 0;
+float freq_2_ind = 0;
+float freq_3_ind = 0;
+float freq_4_ind = 0;
+float freq_5_ind = 0;
+float freq_6_ind = 0;
+float freq_7_ind = 0;
+float freq_8_ind = 0;
+float freq_9_ind = 0;
+float freq_10_ind = 0;
+float freq_11_ind = 0;
+float freq_12_ind = 0;
 
-volatile float freq_lidar_new = 0;
-volatile float freq_lidar_prev = 0;
-volatile float freq_lidar_step = 0;
-volatile float freq_lidar = 200;
-volatile float freq_lidar_inc;
-volatile float freq_lidar_ind = 0;
-volatile float temp1 = 0;
-volatile float temp2 = 0;
+float freq_lidar_new = 0;
+float freq_lidar_prev = 0;
+float freq_lidar_step = 0;
+float freq_lidar = 200;
+float freq_lidar_inc;
+float freq_lidar_ind = 0;
+float temp1 = 0;
+float temp2 = 0;
 
-volatile uint32_t prevlidarSampleTime;
-volatile uint32_t lidarSampleTime;
-volatile uint32_t time_delta;
+uint32_t prevlidarSampleTime;
+uint32_t lidarSampleTime;
+uint32_t time_delta;
 
-volatile int16_t table_val;
+int16_t table_val;
 
-volatile uint8_t lidarModeActive = 0;
-volatile uint8_t capModeActive = 0;
+uint8_t lidarModeActive = 0;
+uint8_t capModeActive = 0;
 
-volatile uint8_t temp_2 = 1;
+uint8_t temp_2 = 1;
 
-volatile int16_t max_filter_index = 255;
+int16_t max_filter_index = 255;
 uint8_t filter_active = 0;
-volatile uint16_t *filter;
-volatile float freq_fil = 1;
-volatile float freq_fil_inc;
-volatile float freq_fil_ind = 0;
-volatile float filter_product;
+uint16_t *filter;
+float freq_fil = 1;
+float freq_fil_inc;
+float freq_fil_ind = 0;
+float filter_product;
 
-volatile float ampltiude_multiplier = 0;
+float ampltiude_multiplier = 0;
 
-volatile float acc_vector = 0;
+float acc_vector = 0;
 
-volatile uint8_t setFilterIndex = 0;
+uint8_t setFilterIndex = 0;
 
-volatile uint8_t skipFilter = 0;
+uint8_t skipFilter = 0;
 
-volatile uint8_t IIR_filter_active = 1;
+uint8_t IIR_filter_active = 1;
 
 //UBaseType_t  uxSavedInterruptStatus;
 
-void setWavetableAmplitude(volatile uint8_t* intTracker){
+void setWavetableAmplitude(uint8_t* intTracker){
 	ampltiude_multiplier = (*intTracker) / ((float)ROTATION_STEPS-1);
 	//ampltiude_multiplier = 1;
 }
@@ -368,13 +368,13 @@ void DAC_BufferRefresh(void){
 	}
 }
 
-void switchTable(volatile uint16_t* desired_table, volatile int16_t size){
+void switchTable(uint16_t* desired_table, int16_t size){
 	max_table_index = size;
 	waveTable = desired_table;
 	switchOctave(octave);
 }
 
-void switchFilter(volatile uint16_t* desired_table, volatile int16_t size){
+void switchFilter(uint16_t* desired_table, int16_t size){
 	max_filter_index = size;
 	filter = desired_table;
 }
@@ -469,18 +469,18 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac){
 
 }
 
-void passBufferToDAC(volatile q15_t* buffer, DAC_HandleTypeDef* hdac){
+void passBufferToDAC(q15_t* buffer, DAC_HandleTypeDef* hdac){
 	HAL_GPIO_TogglePin(LED_LAT_GPIO_Port, LED_LAT_Pin);
 	HAL_DAC_Start_DMA(hdac, DAC_CHANNEL_1, (uint32_t*)buffer, 512, DAC_ALIGN_12B_R);
 }
 
-void clearBuffer(volatile q15_t* buffer){
+void clearBuffer(q15_t* buffer){
 	for(int i = 0; i < BUFFER_SIZE; i++){
 		buffer[i] = BUFFER_OFFSET;
 	}
 }
 
-void fillBuffer(volatile q15_t* buffer){
+void fillBuffer(q15_t* buffer){
 	// if button touched, fill buffer based on its frequency
 	//LED_State(KEY_1_PORT, KEY_1_PIN)
 
@@ -564,11 +564,11 @@ void fillBuffer(volatile q15_t* buffer){
 	}
 }
 
-void reset_index(volatile float* freq_ind){
+void reset_index(float* freq_ind){
 	freq_ind = 0;
 }
 
-void addTableToBuffer(volatile q15_t* buffer, volatile float* freq_inc, volatile float* freq_ind){
+void addTableToBuffer(q15_t* buffer, float* freq_inc, float* freq_ind){
 	if( (filter_active == 1) && (skipFilter == 0) ){
 		if(lidarModeActive){
 			for(int i = 0; i < BUFFER_SIZE; i++){
@@ -608,7 +608,7 @@ q15_t filter_multiplier(int16_t* waveTable){
 	return (q15_t) filter_product;
 }
 
-uint16_t incrementIndex(volatile float* freq_inc, volatile float* freq_ind){
+uint16_t incrementIndex(float* freq_inc, float* freq_ind){
 	*freq_ind += (*freq_inc);
 	if((*freq_ind) >= max_table_index){
 		(*freq_ind) -= max_table_index;
@@ -617,7 +617,7 @@ uint16_t incrementIndex(volatile float* freq_inc, volatile float* freq_ind){
 	return (uint16_t)(*freq_ind);
 }
 
-uint16_t incrementFilterIndex(volatile float* freq_inc, volatile float* freq_ind){
+uint16_t incrementFilterIndex(float* freq_inc, float* freq_ind){
 	*freq_ind += (*freq_inc);
 	if((*freq_ind) >= max_filter_index){
 		(*freq_ind) -= max_filter_index;
@@ -689,181 +689,3 @@ void decrementOctave(void){
 		switchOctave(octave);
 	}
 }
-
-
-
-//uint8_t buttonNumber(uint8_t reg, uint8_t pin){
-//	if( (reg == KEY_1_PORT) & (pin == KEY_1_PIN)){
-//		return 1;
-//	}
-//	if( (reg == KEY_2_PORT) & (pin == KEY_2_PIN)){
-//			return 2;
-//		}
-//	if( (reg == KEY_3_PORT) & (pin == KEY_3_PIN)){
-//			return 3;
-//		}
-//	if( (reg == KEY_4_PORT) & (pin == KEY_4_PIN)){
-//			return 4;
-//		}
-//	if( (reg == KEY_5_PORT) & (pin == KEY_5_PIN)){
-//			return 5;
-//		}
-//	if( (reg == KEY_6_PORT) & (pin == KEY_6_PIN)){
-//			return 6;
-//		}
-//	if( (reg == KEY_7_PORT) & (pin == KEY_7_PIN)){
-//			return 7;
-//		}
-//	if( (reg == KEY_8_PORT) & (pin == KEY_8_PIN)){
-//			return 8;
-//		}
-//	if( (reg == KEY_9_PORT) & (pin == KEY_9_PIN)){
-//			return 9;
-//		}
-//	if( (reg == KEY_10_PORT) & (pin == KEY_10_PIN)){
-//			return 10;
-//		}
-//	if( (reg == KEY_11_PORT) & (pin == KEY_1_PIN)){
-//			return 11;
-//		}
-//	if( (reg == KEY_12_PORT) & (pin == KEY_12_PIN)){
-//			return 12;
-//		}
-//}
-
-//void playSample(void) {
-//  input_val = 0;
-//  // playing at 44100Hz (22.6757 microseconds)
-//  //input_val = AudioSample__junggle__btn121wavdw[index_tracker] >> 22;
-//  //input_val = AudioSample__serylis__guitarchordwavicpr[index_tracker] >> 22;
-//
-//  //input_val = SinTable[index_tracker] + 128 ;
-//
-//  if (index_1 >= 0) {
-//    if (wave == 1) {
-//      input_val += waveTable_1[index_1];
-//    } else if (wave == 2) {
-//      input_val += waveTable_2[index_1];
-//    } else if (wave == 3) {
-//      input_val += waveTable_2[index_1];
-//    }
-//  }
-//
-////  if (index_2 >= 0) {
-////    if (wave == 1) {
-////      input_val += waveTable_1[index_2];
-////    } else if (wave == 2) {
-////      input_val += waveTable_2[index_2];
-////    } else if (wave == 3) {
-////      input_val += waveTable_3[index_2];
-////    }
-////  }
-////
-////  if (index_3 >= 0) {
-////    if (wave == 1) {
-////      input_val += waveTable_1[index_3];
-////    } else if (wave == 2) {
-////      input_val += waveTable_2[index_3];
-////    } else if (wave == 3) {
-////      input_val += waveTable_3[index_3];
-////    }
-////  }
-////
-////  if (index_4 >= 0) {
-////    if (wave == 1) {
-////      input_val += waveTable_1[index_4];
-////    } else if (wave == 2) {
-////      input_val += waveTable_2[index_4];
-////    } else if (wave == 3) {
-////      input_val += waveTable_3[index_4];
-////    }
-////  }
-////
-////  if (index_5 >= 0) {
-////    if (wave == 1) {
-////      input_val += waveTable_1[index_5];
-////    } else if (wave == 2) {
-////      input_val += waveTable_2[index_5];
-////    } else if (wave == 3) {
-////      input_val += waveTable_3[index_5];
-////    }
-////  }
-////
-////  if (index_6 >= 0) {
-////    if (wave == 1) {
-////      input_val += waveTable_1[index_6];
-////    } else if (wave == 2) {
-////      input_val += waveTable_2[index_6];
-////    } else if (wave == 3) {
-////      input_val += waveTable_3[index_6];
-////    }
-////  }
-////
-////  if (index_7 >= 0) {
-////    if (wave == 1) {
-////      input_val += waveTable_1[index_7];
-////    } else if (wave == 2) {
-////      input_val += waveTable_2[index_7];
-////    } else if (wave == 3) {
-////      input_val += waveTable_3[index_7];
-////    }
-////  }
-////
-////  if (index_8 >= 0) {
-////    if (wave == 1) {
-////      input_val += waveTable_1[index_8];
-////    } else if (wave == 2) {
-////      input_val += waveTable_2[index_8];
-////    } else if (wave == 3) {
-////      input_val += waveTable_3[index_8];
-////    }
-////  }
-////
-////  if (index_9 >= 0) {
-////    if (wave == 1) {
-////      input_val += waveTable_1[index_9];
-////    } else if (wave == 2) {
-////      input_val += waveTable_2[index_9];
-////    } else if (wave == 3) {
-////      input_val += waveTable_3[index_9];
-////    }
-////  }
-////
-////  if (index_10 >= 0) {
-////    if (wave == 1) {
-////      input_val += waveTable_1[index_10];
-////    } else if (wave == 2) {
-////      input_val += waveTable_2[index_10];
-////    } else if (wave == 3) {
-////      input_val += waveTable_3[index_10];
-////    }
-////  }
-////
-////  if (index_11 >= 0) {
-////    if (wave == 1) {
-////      input_val += waveTable_1[index_11];
-////    } else if (wave == 2) {
-////      input_val += waveTable_2[index_11];
-////    } else if (wave == 3) {
-////      input_val += waveTable_3[index_11];
-////    }
-////  }
-////
-////  if (index_12 >= 0) {
-////    if (wave == 1) {
-////      input_val += waveTable_1[index_12];
-////    } else if (wave == 2) {
-////      input_val += waveTable_2[index_12];
-////    } else if (wave == 3) {
-////      input_val += waveTable_3[index_12];
-////    }
-////  }
-//
-//  input_val += BIT_OFFSET;
-//
-//  //HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_8B_R, input_val);
-//  //HAL_DAC_Start(&hdac1, DAC_CHANNEL_2);
-//
-//  // set PWM
-//  //analogWrite(PIN_OUTPUT, input_val);
-//}

@@ -29,26 +29,26 @@
 
 #define TICK_POV_MICROSEC_10_DIVIDER 800
 
-volatile uint32_t prevTracker = 0;
-volatile int64_t deltaTracker = 0;
+uint32_t prevTracker = 0;
+int64_t deltaTracker = 0;
 
-volatile int64_t trigDeltaTracker = 0;
+int64_t trigDeltaTracker = 0;
 
-volatile double delayCycles = 0;
+double delayCycles = 0;
 
-volatile uint32_t switchPOV = 0;
-volatile uint32_t timerPOVstate = 0;
+uint32_t switchPOV = 0;
+uint32_t timerPOVstate = 0;
 
 
-volatile uint32_t usTickTracker = 0;
+uint32_t usTickTracker = 0;
 
-volatile uint32_t indexTracker = 0;
+uint32_t indexTracker = 0;
 
-volatile uint8_t POV_timerActive = 0;
+uint8_t POV_timerActive = 0;
 
-volatile uint32_t tick_threshold = 0;
-volatile uint32_t hwTriggerCnt	 = 0;
-volatile uint8_t firstRun = 1;
+uint32_t tick_threshold = 0;
+uint32_t hwTriggerCnt	 = 0;
+uint8_t firstRun = 1;
 
 uint32_t lidarPOV_Map = 0;
 
@@ -207,7 +207,7 @@ const uint8_t message_resenv_red[MESSAGE_LENGTH][MESSAGE_WIDTH] = {
 		{0, 0, 0, 0, 0, 0, 0}
 };
 
-volatile uint8_t lidar_green[MESSAGE_LENGTH][MESSAGE_WIDTH] = {
+uint8_t lidar_green[MESSAGE_LENGTH][MESSAGE_WIDTH] = {
 		{0, 0, 0, 0, 0, 0, 0},
 		{0, 0, 0, 0, 0, 0, 0},
 		{0, 0, 0, 0, 0, 0, 0},
@@ -242,7 +242,7 @@ volatile uint8_t lidar_green[MESSAGE_LENGTH][MESSAGE_WIDTH] = {
 		{0, 0, 0, 0, 0, 0, 0}
 };
 
-volatile uint8_t lidar_red[MESSAGE_LENGTH][MESSAGE_WIDTH] = {
+uint8_t lidar_red[MESSAGE_LENGTH][MESSAGE_WIDTH] = {
 		{0, 0, 0, 0, 0, 0, 0},
 		{0, 0, 0, 0, 0, 0, 0},
 		{0, 0, 0, 0, 0, 0, 0},
@@ -357,19 +357,9 @@ volatile uint8_t lidar_red[MESSAGE_LENGTH][MESSAGE_WIDTH] = {
 
 
 void POV_handler(uint64_t RPR){
-//	usTickTracker = DWT->CYCCNT;
-//	DWT->CYCCNT = 0; // reset the counter
+
 	switchPOV++;
 
-//	char temp_buf2[10];
-//	itoa(switchPOV, temp_buf2, 10);
-//	HAL_UART_Transmit(&huart3, (uint8_t*) temp_buf2, sizeof(temp_buf2), 10);
-//		char str[5] = "\n\r";
-//		HAL_UART_Transmit(&huart3, (uint8_t*) str, sizeof(str), 10);
-
-	//deltaTracker = fabs(usTickTracker);
-
-	//volatile uint32_t tempTracker = usTickTracker-prevTracker;
 	if( (RPR) <= ((uint32_t) TICK_POV_THRESH)){
 		//prevTracker = usTickTracker;
 
@@ -377,13 +367,6 @@ void POV_handler(uint64_t RPR){
 		//deltaTracker = deltaTracker / HALF_MAGNETS;
 		visualizationRun(2, usTickTracker);
 	}
-//	else{
-//		resetIntTracker();
-//	}
-//		else{
-//		prevTracker = usTickTracker;
-//	}
-
 
 }
 
@@ -615,29 +598,7 @@ void run_message(uint8_t red[][7], uint8_t green[][7], uint32_t  cyclePerHalfTur
 
 	// set timer for microsecond resolution
 
-	//volatile uint64_t uS_10_needed = round(100*( (*cyclePerHalfTurn)/TICK_POV_MICROSEC_10_DIVIDER) /(HALF_LENGTH+2));
-
-	//volatile uint64_t uS_10_needed = ((uint64_t) temp) * 100;;
-	volatile uint32_t uS_10_needed =  round( ((cyclePerHalfTurn)/( (double) TICK_POV_MICROSEC_10_DIVIDER)) / ((double) HALF_LENGTH));
-	//uS_10_needed = round( ((*cyclePerHalfTurn)/( (double) TICK_POV_MICROSEC_10_DIVIDER)) / ((double) HALF_LENGTH+2));
-
-	//uS_10_needed = round( ((double) *cyclePerHalfTurn) * ((double)0.000078125) );
-//	int64_t var = (*cyclePerHalfTurn);
-//	uS_10_needed = round( ((double) var) * (0.000078125) );
-
-//	char temp_buf2[10];
-//	itoa(uS_10_needed, temp_buf2, 10);
-//	HAL_UART_Transmit(&huart3, (uint8_t*) temp_buf2, sizeof(temp_buf2), 10);
-//	char str[5] = "\n\r";
-//	HAL_UART_Transmit(&huart3, (uint8_t*) str, sizeof(str), 10);
-
-	// round to nearest 10uS since thats the resolution of our timer
-//	uint32_t remainder = uS_10_needed % 10;
-//	if(remainder >= 5){
-//		uS_10_needed = uS_10_needed + (10.0 - remainder);
-//	}else{
-//		uS_10_needed = uS_10_needed - remainder; // remainder here could potentially be zero
-//	}
+	uint32_t uS_10_needed =  round( ((cyclePerHalfTurn)/( (double) TICK_POV_MICROSEC_10_DIVIDER)) / ((double) HALF_LENGTH));
 
 	if(uS_10_needed == 0){
 		uS_10_needed = 1;
@@ -645,12 +606,6 @@ void run_message(uint8_t red[][7], uint8_t green[][7], uint32_t  cyclePerHalfTur
 	else if(uS_10_needed >= 65535){
 		uS_10_needed = 65535;
 	}
-
-	// max value PSC can take
-//	if((uS_needed*TIMER_SCALAR) > 65535){
-//		uS_needed = (uint16_t) (65535/TIMER_SCALAR);
-//	}
-	//htim3.Init.Period = usTIMER_PERIOD * uS_needed;
 
 	if(POV_timerActive == 0){
 		POV_timerActive = 1;
@@ -663,56 +618,13 @@ void run_message(uint8_t red[][7], uint8_t green[][7], uint32_t  cyclePerHalfTur
 		disable_buttons();
 		HAL_TIM_Base_Start_IT(&htim3);
 	}
-//	else{
-//		HAL_TIM_Base_Stop_IT(&htim3);
-//		htim3.Instance->ARR = (uint16_t) uS_10_needed;
-//		indexTracker = 0;
-//
-//
-//		HAL_TIM_Base_Start_IT(&htim3);
-//
-//
-//
-//	}
 
-
-//	for(int i = 0; i < (HALF_LENGTH); i++){
-//		memset(LED_SETTINGS, 255, sizeof LED_SETTINGS);
-//
-//		if( (switchPOV%2) == 1 ){
-//			POV_left(&green[i][0], 0);
-//			POV_right(&red[i+HALF_LENGTH][0], 1);
-//		}else{
-//			POV_left(&red[i+HALF_LENGTH][0], 1);
-//			POV_right(&green[i][0], 0);
-//		}
-//
-//		transmitToBuffer();
-//
-//		//delay below
-//		HAL_Delay(delay);
-//	}
-	//switchPOV++;
 
 
 }
 
 
 void visualizationRun(uint8_t visNum, uint32_t cyclePerHalfTurn){
-//	float LED_delay = RPR/POV_RESOLUTION;
-//
-//	for(int i = 0; i <= POV_RESOLUTION; i++){
-//		POV_LEDs(visualization_map1[i]);
-//
-//		switchPOV =
-//
-//		HAL_Delay(LED_delay);
-//	}
-//	char temp_buf2[10];
-//	itoa((*cyclePerHalfTurn), temp_buf2, 10);
-//	HAL_UART_Transmit(&huart3, (uint8_t*) temp_buf2, sizeof(temp_buf2), 10);
-//	char str[5] = "\n\r";
-//	HAL_UART_Transmit(&huart3, (uint8_t*) str, sizeof(str), 10);
 
 	if(visNum == 1){
 		global_visNum = 1;
@@ -762,10 +674,6 @@ void updatePOV_LidarMatricies(uint32_t lidarPOV_Map){
 		setMatrix(lidar_green, sizeof(lidar_green[0][0]) * (lidarPOV_Map+1) * MESSAGE_WIDTH, 0, 0);
 	}
 }
-
-//void usTick(void){
-//	usTickTracker++;
-//}
 
 void transmitToBuffer(void){
 

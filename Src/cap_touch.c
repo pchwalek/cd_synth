@@ -81,305 +81,152 @@ void Reset_Cap_INT(void){
 //// reads cap touch sense binary values from CAP1214 IC and
 ////    turns on corresponding LEDs
 void Sample_Cap_Touch(void){
-	uint8_t start_DMA = 0;
-	uint8_t start_DMA_2 = 0;
+  uint8_t start_DMA = 0;
+  uint8_t start_DMA_2 = 0;
 
-    Reset_Cap_INT();
+  Reset_Cap_INT();
 
-	while(1){
-	osSemaphoreWait (capSampleSemaphoreHandle, osWaitForever);
+  while(1){
 
-	taskENTER_CRITICAL();
-	Read_Cap_Touch();
-	taskEXIT_CRITICAL();
+    osSemaphoreWait (capSampleSemaphoreHandle, osWaitForever);
 
-	if(isButtonEnabled() == 1){
-		if( (cap_read[KEY_1_PORT] & KEY_1_PIN) == KEY_1_PIN){
-			Set_LED(CAP_1_LED_PORT, CAP_1_LED_PIN, 1);
-		}
-		else{
-			if(LED_State(CAP_1_LED_PORT, CAP_1_LED_PIN)){
-				Set_LED(CAP_1_LED_PORT, CAP_1_LED_PIN, 0);
-			}
-		}
+    taskENTER_CRITICAL();
+    Read_Cap_Touch();
+    taskEXIT_CRITICAL();
 
-		if( (cap_read[KEY_2_PORT] & KEY_2_PIN) == KEY_2_PIN){
-			Set_LED(CAP_2_LED_PORT, CAP_2_LED_PIN, 1);
-		}
-		else{
-			if(LED_State(CAP_2_LED_PORT, CAP_2_LED_PIN)){
-				Set_LED(CAP_2_LED_PORT, CAP_2_LED_PIN, 0);
-			}
-		}
+    if(isButtonEnabled() == 1){
 
-		if( (cap_read[KEY_3_PORT] & KEY_3_PIN) == KEY_3_PIN){
-			Set_LED(CAP_3_LED_PORT, CAP_3_LED_PIN, 1);
-		}
-		else{
-			if(LED_State(CAP_3_LED_PORT, CAP_3_LED_PIN)){
-				Set_LED(CAP_3_LED_PORT, CAP_3_LED_PIN, 0);
-			}
-		}
+      if( (cap_read[KEY_1_PORT] & KEY_1_PIN) == KEY_1_PIN){
+	  Set_LED(CAP_1_LED_PORT, CAP_1_LED_PIN, 1);
+      }
+      }
+      else{
+	      if(LED_State(CAP_1_LED_PORT, CAP_1_LED_PIN)){
+		      Set_LED(CAP_1_LED_PORT, CAP_1_LED_PIN, 0);
+	      }
+      }
 
-		if( (cap_read[KEY_4_PORT] & KEY_4_PIN) == KEY_4_PIN){
-			Set_LED(CAP_4_LED_PORT, CAP_4_LED_PIN, 1);
-		}
-		else{
-			if(LED_State(CAP_4_LED_PORT, CAP_4_LED_PIN)){
-				Set_LED(CAP_4_LED_PORT, CAP_4_LED_PIN, 0);
-			}
-		}
+      if( (cap_read[KEY_2_PORT] & KEY_2_PIN) == KEY_2_PIN){
+	      Set_LED(CAP_2_LED_PORT, CAP_2_LED_PIN, 1);
+      }
+      else{
+	      if(LED_State(CAP_2_LED_PORT, CAP_2_LED_PIN)){
+		      Set_LED(CAP_2_LED_PORT, CAP_2_LED_PIN, 0);
+	      }
+      }
 
-		if( (cap_read[KEY_5_PORT] & KEY_5_PIN) == KEY_5_PIN){
-			Set_LED(CAP_5_LED_PORT, CAP_5_LED_PIN, 1);
-		}
-		else{
-			if(LED_State(CAP_5_LED_PORT, CAP_5_LED_PIN)){
-				Set_LED(CAP_5_LED_PORT, CAP_5_LED_PIN, 0);
-			}
-		}
+      if( (cap_read[KEY_3_PORT] & KEY_3_PIN) == KEY_3_PIN){
+	      Set_LED(CAP_3_LED_PORT, CAP_3_LED_PIN, 1);
+      }
+      else{
+	      if(LED_State(CAP_3_LED_PORT, CAP_3_LED_PIN)){
+		      Set_LED(CAP_3_LED_PORT, CAP_3_LED_PIN, 0);
+	      }
+      }
 
-		if( (cap_read[KEY_6_PORT] & KEY_6_PIN) == KEY_6_PIN){
-			Set_LED(CAP_6_LED_PORT, CAP_6_LED_PIN, 1);
-		}
-		else{
-			if(LED_State(CAP_6_LED_PORT, CAP_6_LED_PIN)){
-				Set_LED(CAP_6_LED_PORT, CAP_6_LED_PIN, 0);
-			}
-		}
+      if( (cap_read[KEY_4_PORT] & KEY_4_PIN) == KEY_4_PIN){
+	      Set_LED(CAP_4_LED_PORT, CAP_4_LED_PIN, 1);
+      }
+      else{
+	      if(LED_State(CAP_4_LED_PORT, CAP_4_LED_PIN)){
+		      Set_LED(CAP_4_LED_PORT, CAP_4_LED_PIN, 0);
+	      }
+      }
 
-		if( (cap_read[KEY_7_PORT] & KEY_7_PIN) == KEY_7_PIN){
-			Set_LED(CAP_7_LED_PORT, CAP_7_LED_PIN, 1);
-		}
-		else{
-			if(LED_State(CAP_7_LED_PORT, CAP_7_LED_PIN)){
-				Set_LED(CAP_7_LED_PORT, CAP_7_LED_PIN, 0);
-			}
-		}
+      if( (cap_read[KEY_5_PORT] & KEY_5_PIN) == KEY_5_PIN){
+	      Set_LED(CAP_5_LED_PORT, CAP_5_LED_PIN, 1);
+      }
+      else{
+	      if(LED_State(CAP_5_LED_PORT, CAP_5_LED_PIN)){
+		      Set_LED(CAP_5_LED_PORT, CAP_5_LED_PIN, 0);
+	      }
+      }
 
-		if( (cap_read[KEY_8_PORT] & KEY_8_PIN) == KEY_8_PIN){
-			Set_LED(CAP_8_LED_PORT, CAP_8_LED_PIN, 1);
-		}
-		else{
-			if(LED_State(CAP_8_LED_PORT, CAP_8_LED_PIN)){
-				Set_LED(CAP_8_LED_PORT, CAP_8_LED_PIN, 0);
-			}
-		}
+      if( (cap_read[KEY_6_PORT] & KEY_6_PIN) == KEY_6_PIN){
+	      Set_LED(CAP_6_LED_PORT, CAP_6_LED_PIN, 1);
+      }
+      else{
+	      if(LED_State(CAP_6_LED_PORT, CAP_6_LED_PIN)){
+		      Set_LED(CAP_6_LED_PORT, CAP_6_LED_PIN, 0);
+	      }
+      }
 
-		if( (cap_read[KEY_9_PORT] & KEY_9_PIN) == KEY_9_PIN){
-			Set_LED(CAP_9_LED_PORT, CAP_9_LED_PIN, 1);
-		}
-		else{
-			if(LED_State(CAP_9_LED_PORT, CAP_9_LED_PIN)){
-				Set_LED(CAP_9_LED_PORT, CAP_9_LED_PIN, 0);
-			}
-		}
+      if( (cap_read[KEY_7_PORT] & KEY_7_PIN) == KEY_7_PIN){
+	      Set_LED(CAP_7_LED_PORT, CAP_7_LED_PIN, 1);
+      }
+      else{
+	      if(LED_State(CAP_7_LED_PORT, CAP_7_LED_PIN)){
+		      Set_LED(CAP_7_LED_PORT, CAP_7_LED_PIN, 0);
+	      }
+      }
 
-		if( (cap_read[KEY_10_PORT] & KEY_10_PIN) == KEY_10_PIN){
-			Set_LED(CAP_10_LED_PORT, CAP_10_LED_PIN, 1);
-		}
-		else{
-			if(LED_State(CAP_10_LED_PORT, CAP_10_LED_PIN)){
-				Set_LED(CAP_10_LED_PORT, CAP_10_LED_PIN, 0);
-			}
-		}
+      if( (cap_read[KEY_8_PORT] & KEY_8_PIN) == KEY_8_PIN){
+	      Set_LED(CAP_8_LED_PORT, CAP_8_LED_PIN, 1);
+      }
+      else{
+	      if(LED_State(CAP_8_LED_PORT, CAP_8_LED_PIN)){
+		      Set_LED(CAP_8_LED_PORT, CAP_8_LED_PIN, 0);
+	      }
+      }
 
-		if( (cap_read[KEY_11_PORT] & KEY_11_PIN) == KEY_11_PIN){
-			Set_LED(CAP_11_LED_PORT, CAP_11_LED_PIN, 1);
-		}
-		else{
-			if(LED_State(CAP_11_LED_PORT, CAP_11_LED_PIN)){
-				Set_LED(CAP_11_LED_PORT, CAP_11_LED_PIN, 0);
-			}
-		}
+      if( (cap_read[KEY_9_PORT] & KEY_9_PIN) == KEY_9_PIN){
+	      Set_LED(CAP_9_LED_PORT, CAP_9_LED_PIN, 1);
+      }
+      else{
+	      if(LED_State(CAP_9_LED_PORT, CAP_9_LED_PIN)){
+		      Set_LED(CAP_9_LED_PORT, CAP_9_LED_PIN, 0);
+	      }
+      }
 
-		if( (cap_read[KEY_12_PORT] & KEY_12_PIN) == KEY_12_PIN){
-			Set_LED(CAP_12_LED_PORT, CAP_12_LED_PIN, 1);
-		}
-		else{
-			if(LED_State(CAP_12_LED_PORT, CAP_12_LED_PIN)){
-				Set_LED(CAP_12_LED_PORT, CAP_12_LED_PIN, 0);
-			}
-		}
+      if( (cap_read[KEY_10_PORT] & KEY_10_PIN) == KEY_10_PIN){
+	      Set_LED(CAP_10_LED_PORT, CAP_10_LED_PIN, 1);
+      }
+      else{
+	      if(LED_State(CAP_10_LED_PORT, CAP_10_LED_PIN)){
+		      Set_LED(CAP_10_LED_PORT, CAP_10_LED_PIN, 0);
+	      }
+      }
 
-		if( (cap_read[LEFT_BUTTON_PORT] & LEFT_BUTTON_PIN) == LEFT_BUTTON_PIN){
-			if(leftTouchDebounce == 0){
-				decrementOctave();
-				leftTouchDebounce = 1;
-			}
-		}
-		else{
-			if(leftTouchDebounce){
-				leftTouchDebounce = 0;
-			}
-		}
+      if( (cap_read[KEY_11_PORT] & KEY_11_PIN) == KEY_11_PIN){
+	      Set_LED(CAP_11_LED_PORT, CAP_11_LED_PIN, 1);
+      }
+      else{
+	      if(LED_State(CAP_11_LED_PORT, CAP_11_LED_PIN)){
+		      Set_LED(CAP_11_LED_PORT, CAP_11_LED_PIN, 0);
+	      }
+      }
 
-		if( (cap_read[RIGHT_BUTTON_PORT] & RIGHT_BUTTON_PIN) == RIGHT_BUTTON_PIN){
-			if(rightTouchDebounce == 0){
-				incrementOctave();
-				rightTouchDebounce = 1;
-			}
-		}
-		else{
-			if(rightTouchDebounce){
-				rightTouchDebounce = 0;
-			}
-		}
-	}
+      if( (cap_read[KEY_12_PORT] & KEY_12_PIN) == KEY_12_PIN){
+	      Set_LED(CAP_12_LED_PORT, CAP_12_LED_PIN, 1);
+      }
+      else{
+	      if(LED_State(CAP_12_LED_PORT, CAP_12_LED_PIN)){
+		      Set_LED(CAP_12_LED_PORT, CAP_12_LED_PIN, 0);
+	      }
+      }
 
-//	if(start_DMA){
-//		HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_2, (uint32_t*)sine_wave_array, 32, DAC_ALIGN_12B_R);
-//	}
-//	else if(start_DMA_2){
-//		HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_2, (uint32_t*)waveTable_1, 255, DAC_ALIGN_12B_R);
-//	}
-//	else
-//	{
-//		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_2);
-//	}
-	}
-}
+      if( (cap_read[LEFT_BUTTON_PORT] & LEFT_BUTTON_PIN) == LEFT_BUTTON_PIN){
+	      if(leftTouchDebounce == 0){
+		      decrementOctave();
+		      leftTouchDebounce = 1;
+	      }
+      }
+      else{
+	      if(leftTouchDebounce){
+		      leftTouchDebounce = 0;
+	      }
+      }
 
-//void Sample_Cap_Touch(void){
-//
-//    Reset_Cap_INT();
-//
-//
-//	//taskENTER_CRITICAL();
-//	Read_Cap_Touch();
-//	//taskEXIT_CRITICAL();
-//
-//	if( (cap_read[KEY_1_PORT] & KEY_1_PIN) == KEY_1_PIN){
-//		Set_LED(CAP_1_LED_PORT, CAP_1_LED_PIN, 1);
-//	}
-//	else{
-//		if(LED_State(CAP_1_LED_PORT, CAP_1_LED_PIN)){
-//			Set_LED(CAP_1_LED_PORT, CAP_1_LED_PIN, 0);
-//		}
-//	}
-//
-//	if( (cap_read[KEY_2_PORT] & KEY_2_PIN) == KEY_2_PIN){
-//		Set_LED(CAP_2_LED_PORT, CAP_2_LED_PIN, 1);
-//	}
-//	else{
-//		if(LED_State(CAP_2_LED_PORT, CAP_2_LED_PIN)){
-//			Set_LED(CAP_2_LED_PORT, CAP_2_LED_PIN, 0);
-//		}
-//	}
-//
-//	if( (cap_read[KEY_3_PORT] & KEY_3_PIN) == KEY_3_PIN){
-//		Set_LED(CAP_3_LED_PORT, CAP_3_LED_PIN, 1);
-//	}
-//	else{
-//		if(LED_State(CAP_3_LED_PORT, CAP_3_LED_PIN)){
-//			Set_LED(CAP_3_LED_PORT, CAP_3_LED_PIN, 0);
-//		}
-//	}
-//
-//	if( (cap_read[KEY_4_PORT] & KEY_4_PIN) == KEY_4_PIN){
-//		Set_LED(CAP_4_LED_PORT, CAP_4_LED_PIN, 1);
-//	}
-//	else{
-//		if(LED_State(CAP_4_LED_PORT, CAP_4_LED_PIN)){
-//			Set_LED(CAP_4_LED_PORT, CAP_4_LED_PIN, 0);
-//		}
-//	}
-//
-//	if( (cap_read[KEY_5_PORT] & KEY_5_PIN) == KEY_5_PIN){
-//		Set_LED(CAP_5_LED_PORT, CAP_5_LED_PIN, 1);
-//	}
-//	else{
-//		if(LED_State(CAP_5_LED_PORT, CAP_5_LED_PIN)){
-//			Set_LED(CAP_5_LED_PORT, CAP_5_LED_PIN, 0);
-//		}
-//	}
-//
-//	if( (cap_read[KEY_6_PORT] & KEY_6_PIN) == KEY_6_PIN){
-//		Set_LED(CAP_6_LED_PORT, CAP_6_LED_PIN, 1);
-//	}
-//	else{
-//		if(LED_State(CAP_6_LED_PORT, CAP_6_LED_PIN)){
-//			Set_LED(CAP_6_LED_PORT, CAP_6_LED_PIN, 0);
-//		}
-//	}
-//
-//	if( (cap_read[KEY_7_PORT] & KEY_7_PIN) == KEY_7_PIN){
-//		Set_LED(CAP_7_LED_PORT, CAP_7_LED_PIN, 1);
-//	}
-//	else{
-//		if(LED_State(CAP_7_LED_PORT, CAP_7_LED_PIN)){
-//			Set_LED(CAP_7_LED_PORT, CAP_7_LED_PIN, 0);
-//		}
-//	}
-//
-//	if( (cap_read[KEY_8_PORT] & KEY_8_PIN) == KEY_8_PIN){
-//		Set_LED(CAP_8_LED_PORT, CAP_8_LED_PIN, 1);
-//	}
-//	else{
-//		if(LED_State(CAP_8_LED_PORT, CAP_8_LED_PIN)){
-//			Set_LED(CAP_8_LED_PORT, CAP_8_LED_PIN, 0);
-//		}
-//	}
-//
-//	if( (cap_read[KEY_9_PORT] & KEY_9_PIN) == KEY_9_PIN){
-//		Set_LED(CAP_9_LED_PORT, CAP_9_LED_PIN, 1);
-//	}
-//	else{
-//		if(LED_State(CAP_9_LED_PORT, CAP_9_LED_PIN)){
-//			Set_LED(CAP_9_LED_PORT, CAP_9_LED_PIN, 0);
-//		}
-//	}
-//
-//	if( (cap_read[KEY_10_PORT] & KEY_10_PIN) == KEY_10_PIN){
-//		Set_LED(CAP_10_LED_PORT, CAP_10_LED_PIN, 1);
-//	}
-//	else{
-//		if(LED_State(CAP_10_LED_PORT, CAP_10_LED_PIN)){
-//			Set_LED(CAP_10_LED_PORT, CAP_10_LED_PIN, 0);
-//		}
-//	}
-//
-//	if( (cap_read[KEY_11_PORT] & KEY_11_PIN) == KEY_11_PIN){
-//		Set_LED(CAP_11_LED_PORT, CAP_11_LED_PIN, 1);
-//	}
-//	else{
-//		if(LED_State(CAP_11_LED_PORT, CAP_11_LED_PIN)){
-//			Set_LED(CAP_11_LED_PORT, CAP_11_LED_PIN, 0);
-//		}
-//	}
-//
-//	if( (cap_read[KEY_12_PORT] & KEY_12_PIN) == KEY_12_PIN){
-//		Set_LED(CAP_12_LED_PORT, CAP_12_LED_PIN, 1);
-//	}
-//	else{
-//		if(LED_State(CAP_12_LED_PORT, CAP_12_LED_PIN)){
-//			Set_LED(CAP_12_LED_PORT, CAP_12_LED_PIN, 0);
-//		}
-//	}
-//
-//
-//	if( (cap_read[LEFT_BUTTON_PORT] & LEFT_BUTTON_PIN) == LEFT_BUTTON_PIN){
-//		if(leftTouchDebounce == 0){
-//			decrementOctave();
-//			leftTouchDebounce = 1;
-//		}
-//	}
-//	else{
-//		if(leftTouchDebounce){
-//			leftTouchDebounce = 0;
-//		}
-//	}
-//
-//	if( (cap_read[RIGHT_BUTTON_PORT] & RIGHT_BUTTON_PIN) == RIGHT_BUTTON_PIN){
-//		if(rightTouchDebounce == 0){
-//			incrementOctave();
-//			rightTouchDebounce = 1;
-//		}
-//	}
-//	else{
-//		if(rightTouchDebounce){
-//			rightTouchDebounce = 0;
-//		}
-//	}
-//
-//}
+      if( (cap_read[RIGHT_BUTTON_PORT] & RIGHT_BUTTON_PIN) == RIGHT_BUTTON_PIN){
+	      if(rightTouchDebounce == 0){
+		      incrementOctave();
+		      rightTouchDebounce = 1;
+	      }
+      }
+      else{
+	      if(rightTouchDebounce){
+		      rightTouchDebounce = 0;
+	      }
+      }
+  }
+  }
