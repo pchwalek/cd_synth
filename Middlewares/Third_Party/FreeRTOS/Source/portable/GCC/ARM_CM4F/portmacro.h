@@ -187,7 +187,6 @@ BaseType_t xReturn;
 }
 
 /*-----------------------------------------------------------*/
-
 portFORCE_INLINE static void vPortRaiseBASEPRI( void )
 {
 uint32_t ulNewBASEPRI;

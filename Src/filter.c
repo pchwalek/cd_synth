@@ -7,7 +7,7 @@
 //#define SCALE_INPUT		22.918312
 #define SCALE_INPUT		57.6140893992662
 
-#define PI			3.1415926536
+//#define PI			3.1415926536
 #define PI_DIV_2	1.5707963268
 
 volatile uint8_t pastVal = -1;

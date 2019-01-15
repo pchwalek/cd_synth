@@ -2,6 +2,7 @@
 #include "led_cntrl.h"
 #include "I2C.h"
 #include "wave_synth.h"
+#include "res_touch.h"
 //#include "freertos.c"
 //#include "stm32l4xx_hal_dac.h"
 
@@ -60,7 +61,7 @@ void Setup_Cap_Touch(void){
 
 // read binary cap touch sense registors from CAP1214 IC
 void Read_Cap_Touch(void){
-	uint8_t packet;
+	//uint8_t packet;
 
 	HAL_I2C_Mem_Read(&hi2c1, CAP1214_ADDR<<1, 0x03, 1, cap_read, 2, 2);
 
@@ -81,8 +82,8 @@ void Reset_Cap_INT(void){
 //// reads cap touch sense binary values from CAP1214 IC and
 ////    turns on corresponding LEDs
 void Sample_Cap_Touch(void){
-  uint8_t start_DMA = 0;
-  uint8_t start_DMA_2 = 0;
+//  uint8_t start_DMA = 0;
+//  uint8_t start_DMA_2 = 0;
 
   Reset_Cap_INT();
 

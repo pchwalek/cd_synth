@@ -53,7 +53,7 @@ void deactivateLidar(void){
 
 // gen LED map for when disk is not spinning
 void genMap(int16_t* measurement){
-	lidar_map = 0x0001 << ( ((uint16_t) (*measurement / ((float) MEASUREMENT_DIVISOR)) ) % 15);
+	lidar_map = 0x0001 << ( ((uint16_t) (*measurement / ((float) MEASUREMENT_DIVISOR)) ) % 16);
 }
 
 // gen LED activation value for when disk is spinning
@@ -87,7 +87,7 @@ void LidarMeasurementHandler(volatile int16_t* measurement){
 void LidarMeasurement(void)
 {
   int status;
-  int IntCount;
+  //int IntCount;
 
   activateLidar();
   HAL_Delay(500);
@@ -135,7 +135,7 @@ void LidarMeasurement(void)
 
 volatile int status;
 volatile int IntCount;
-static VL53L1_RangingMeasurementData_t RangingData;
+//static VL53L1_RangingMeasurementData_t RangingData;
 
 void VL53L1_clear_int_and_enable_range(void){
 	uint8_t packet;

@@ -44,7 +44,7 @@ void ResistiveTouchSampler(void){
 				if ( (HAL_GetTick() - button_1_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
 					button_1_timeout = HAL_GetTick();
 					Set_LED(BUTTON_1_G_REG, BUTTON_1_G_PIN, 1);
-					Set_LED(BUTTON_2_R_REG, BUTTON_2_R_PIN, 0);
+					Set_LED(BUTTON_2_G_REG, BUTTON_2_G_PIN, 0);
 					Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, 0);
 					Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
 					Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
@@ -58,7 +58,7 @@ void ResistiveTouchSampler(void){
 				if ( (HAL_GetTick() - button_2_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
 					button_2_timeout = HAL_GetTick();
 					Set_LED(BUTTON_1_G_REG, BUTTON_1_G_PIN, 0);
-					Set_LED(BUTTON_2_R_REG, BUTTON_2_R_PIN, 1);
+					Set_LED(BUTTON_2_G_REG, BUTTON_2_G_PIN, 1);
 					Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, 0);
 					Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
 					Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
@@ -72,7 +72,7 @@ void ResistiveTouchSampler(void){
 				if ( (HAL_GetTick() - button_3_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
 					button_3_timeout = HAL_GetTick();
 					Set_LED(BUTTON_1_G_REG, BUTTON_1_G_PIN, 0);
-					Set_LED(BUTTON_2_R_REG, BUTTON_2_R_PIN, 0);
+					Set_LED(BUTTON_2_G_REG, BUTTON_2_G_PIN, 0);
 					Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, 1);
 					Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
 					Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
@@ -86,7 +86,7 @@ void ResistiveTouchSampler(void){
 				if ( (HAL_GetTick() - button_7_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
 					button_7_timeout = HAL_GetTick();
 					Set_LED(BUTTON_1_G_REG, BUTTON_1_G_PIN, 0);
-					Set_LED(BUTTON_2_R_REG, BUTTON_2_R_PIN, 0);
+					Set_LED(BUTTON_2_G_REG, BUTTON_2_G_PIN, 0);
 					Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, 0);
 					Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 1);
 					Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
@@ -100,7 +100,7 @@ void ResistiveTouchSampler(void){
 				if ( (HAL_GetTick() - button_8_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
 					button_8_timeout = HAL_GetTick();
 					Set_LED(BUTTON_1_G_REG, BUTTON_1_G_PIN, 0);
-					Set_LED(BUTTON_2_R_REG, BUTTON_2_R_PIN, 0);
+					Set_LED(BUTTON_2_G_REG, BUTTON_2_G_PIN, 0);
 					Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, 0);
 					Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
 					Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 1);
@@ -322,12 +322,15 @@ void disable_buttons(void){
 		HAL_TIM_Base_Start_IT(&htim4);
 	}else{
 		//restart timer
-		HAL_TIM_Base_Stop_IT(&htim4);
-		HAL_TIM_Base_Start_IT(&htim4);
+		htim4.Instance->CNT = 0;
+//		HAL_TIM_Base_Stop_IT(&htim4);
+//		HAL_TIM_Base_Start_IT(&htim4);
 	}
 }
 
 void enable_buttons(void){
+	//taskENTER_CRITICAL();
+
 	HAL_TIM_Base_Stop_IT(&htim4);
 	LED_SETTINGS[0] = temp_buffer[0];
 	LED_SETTINGS[1] = temp_buffer[1];
@@ -337,6 +340,7 @@ void enable_buttons(void){
 	LED_SETTINGS[5] = temp_buffer[5];
 	transmitToBuffer();
 	button_state = 1;
+	//taskEXIT_CRITICAL();
 }
 
 uint8_t isButtonEnabled(void){
