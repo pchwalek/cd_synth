@@ -265,7 +265,9 @@ void POV_handler(uint64_t RPR) {
   switchPOV++;
 
   if ((RPR) <= ((uint32_t)TICK_POV_THRESH)) {
-    // prevTracker = usTickTracker;
+
+    // disable any functions that use LED display
+    disable_buttons();
 
     usTickTracker = (uint32_t)RPR;
     // deltaTracker = deltaTracker / HALF_MAGNETS;
@@ -512,9 +514,6 @@ void run_message(uint8_t red[][7], uint8_t green[][7],
 
     // change timer frequency based on rounds-per-second calculation
     htim3.Instance->ARR = (uint16_t)uS_10_needed;
-
-    // disable any functions that use LED display
-    disable_buttons();
 
     // run one iteration of the POV display before starting POV timer
     POV_Update();

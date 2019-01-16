@@ -2,6 +2,8 @@
 #define __res_touch_H
 
 #include "stdint.h"
+#include "cmsis_os.h"
+
 
 #define BUTTON_1_R_PIN		0x10
 #define BUTTON_1_R_REG		5
@@ -52,6 +54,8 @@
 #define BUTTON_10_R_REG		2
 #define BUTTON_10_G_PIN		0x02
 #define BUTTON_10_G_REG		2
+
+osTimerId povExitTimerHandle;
 
 void ResistiveTouchSampler(void);
 void buttonStateMachine(void);

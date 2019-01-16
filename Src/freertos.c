@@ -61,6 +61,7 @@
 #include "wave_synth.h"
 #include "MMA8451.h"
 #include "led_cntrl.h"
+#include "res_touch.h"
 
 /* USER CODE END Includes */
 
@@ -173,6 +174,9 @@ void StartDefaultTask(void const * argument)
 
   osTimerDef(accSampleTimer, accGiveSemaphore);
   accSampleTimerHandle = osTimerCreate(osTimer(accSampleTimer), osTimerPeriodic, (void *)0);
+
+  osTimerDef(povExitTimer, enable_buttons);
+  povExitTimerHandle = osTimerCreate(osTimer(povExitTimer), osTimerOnce, (void *)0);
 
   osThreadDef(lidarMeasurementTask, LidarMeasurement, osPriorityLow, 0, 256);
   lidarMeasurementHandle = osThreadCreate(osThread(lidarMeasurementTask), NULL);

@@ -470,19 +470,23 @@ void disable_buttons(void){
 		temp_buffer[3] = LED_SETTINGS[3];
 		temp_buffer[4] = LED_SETTINGS[4];
 		temp_buffer[5] = LED_SETTINGS[5];
-		HAL_TIM_Base_Start_IT(&htim4);
+		//HAL_TIM_Base_Start_IT(&htim4);
+		osTimerStart(povExitTimerHandle, 400);
 	}else{
 		//restart timer
-		htim4.Instance->CNT = 0;
+		//htim4.Instance->CNT = 0;
 //		HAL_TIM_Base_Stop_IT(&htim4);
 //		HAL_TIM_Base_Start_IT(&htim4);
+	    osTimerStop(povExitTimerHandle);
+	    osTimerStart(povExitTimerHandle, 400);
 	}
 }
 
 void enable_buttons(void){
 	//taskENTER_CRITICAL();
 
-	HAL_TIM_Base_Stop_IT(&htim4);
+
+	//HAL_TIM_Base_Stop_IT(&htim4);
 	LED_SETTINGS[0] = temp_buffer[0];
 	LED_SETTINGS[1] = temp_buffer[1];
 	LED_SETTINGS[2] = temp_buffer[2];

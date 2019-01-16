@@ -775,8 +775,8 @@ void applyWaveshape(q15_t* buffer, uint16_t size){
   uint8_t index;
 
   for(uint16_t i = 0; i<size; i++){
-    if(buffer[i] > UPPER_BOUND) buffer[i] == UPPER_BOUND;
-    else if (buffer[i] < LOWER_BOUND) buffer[i] == LOWER_BOUND;
+    if(buffer[i] > UPPER_BOUND) buffer[i] = UPPER_BOUND;
+    else if (buffer[i] < LOWER_BOUND) buffer[i] = LOWER_BOUND;
 
     index = round(255 * (buffer[i] - LOWER_BOUND) / ((float) UPPER_BOUND - LOWER_BOUND));
 
