@@ -427,6 +427,6 @@ void calculateAngle(float x_g, float y_g, float z_g){
 
 	arm_dot_prod_f32(accVector,gravityVector,3,&dotProd);
 
-	angle = (dotProd/ ( sqrt(x_g*x_g + y_g*y_g + z_g*z_g))) + PI_DIV_2;
+	angle = acos(dotProd/ ( sqrt(x_g*x_g + y_g*y_g + z_g*z_g)));
 //	return angle;
 }

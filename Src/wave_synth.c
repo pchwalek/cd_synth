@@ -11,6 +11,8 @@
 #include "filter.h"
 #include "arm_math.h"
 
+#include "stdlib.h"
+
 #define MAX_INDEX 255
 
 #define BIT_SHIFT_Q_CONV 4
@@ -19,9 +21,9 @@
 #define DAC_FREQ 40000.0  // 50kHz
 #define LIDAR_INTERPOLATE 0.0128  //  BUFFER_SIZE/DAC_FREQ
 
-//#define BUFFER_OFFSET 2048
-#define BUFFER_OFFSET 512
-#define SCALE_OUTPUT 2
+#define BUFFER_OFFSET 1024
+//#define BUFFER_OFFSET 512
+#define SCALE_OUTPUT 4
 
 #define FILTER_CNT 11
 
@@ -67,6 +69,8 @@
 #define NOTE_A5S 932.328
 #define NOTE_B5 987.767
 
+#define ALPHA_DELTA_FREQ	0.005
+
 int16_t input_val = 0;
 
 int32_t index_1 = 0;
@@ -109,6 +113,8 @@ q15_t shifted_buffer_3[BUFFER_SIZE];
 uint8_t buff_toggle = 0;
 int16_t max_table_index = 255;
 uint8_t octave = 4;
+
+uint8_t signal_off = 1;
 // uint8_t wave = 1;
 
 float freq_1_inc;
@@ -148,7 +154,7 @@ float temp2 = 0;
 
 uint32_t prevlidarSampleTime;
 uint32_t lidarSampleTime;
-uint32_t time_delta;
+float time_delta;
 
 int16_t table_val;
 
@@ -200,6 +206,14 @@ uint8_t isLidarModeActive(void) {
 uint8_t isCapModeActive(void) {
   if (capModeActive) return 1;
   return 0;
+}
+
+void turnSoundOff(void){
+  signal_off = 0;
+}
+
+void turnSoundOn(void){
+  signal_off = 1;
 }
 
 void setTable(char table) {
@@ -307,23 +321,31 @@ void calcLidarFreq(int16_t* measurement) {
   freq_lidar = freq_lidar_new;
   freq_lidar_new = 123.471 * expf(0.00288811 * ((float)*measurement));
 
-  if (freq_lidar > 16000) freq_lidar = 16000;
+  //freq_lidar_new = 2391.02 * log(0.401853 * ((float)*measurement));
 
-  if (freq_lidar_prev == freq_lidar)
+  if (freq_lidar_new > 18000) freq_lidar_new = 18000;
+
+  if (freq_lidar_new == freq_lidar)
     freq_lidar_step = 0;
   else {
     // linear interpolate frequency steps
     // 		find out how many approximatley how many buffers you will fill until
     // next lidar reading
-    freq_lidar_step = ((freq_lidar_new - freq_lidar) /
-                       (((int8_t)(time_delta / LIDAR_INTERPOLATE)) * 512));
+//    freq_lidar_step = ((freq_lidar_new - freq_lidar) /
+//                       (((time_delta / LIDAR_INTERPOLATE)) * 512));
+
+//    freq_lidar_step = ((freq_lidar_new - freq_lidar) /
+//                           (((time_delta / 40000))));
   }
 
   freq_lidar_inc = (freq_lidar / ((float)DAC_FREQ)) * max_table_index;
 }
 
 void updateLidarInc(void) {
-  freq_lidar += freq_lidar_step;
+
+  //freq_lidar += freq_lidar_step;
+
+  freq_lidar += ALPHA_DELTA_FREQ * (freq_lidar_new - freq_lidar);
   freq_lidar_inc = (freq_lidar / ((float)DAC_FREQ)) * max_table_index;
 }
 
@@ -386,7 +408,7 @@ void prepBuffer(DAC_HandleTypeDef* hdac) {
 
   // determine which buffer to fill
   if (buff_toggle == 0) {
-    passBufferToDAC(buffer_3, hdac);
+    passBufferToDAC(filtered_buffer_3, hdac);
 
     buff_toggle = 1;
 
@@ -396,13 +418,17 @@ void prepBuffer(DAC_HandleTypeDef* hdac) {
 
     if (IIR_filter_active == 1) {
       // arm_float_to_q15(&temp_var, &temp_arm, 1);
-      arm_shift_q15(buffer_2, BIT_SHIFT_Q_CONV, shifted_buffer_2, BUFFER_SIZE);
-      applyFilter(shifted_buffer_2, filtered_buffer_2, shifted_buffer_3);
-      arm_shift_q15(filtered_buffer_2, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
-                    buffer_2, BUFFER_SIZE);
+      //arm_shift_q15(buffer_2, BIT_SHIFT_Q_CONV, shifted_buffer_2, BUFFER_SIZE);
+      //applyFilter(shifted_buffer_2, filtered_buffer_2, shifted_buffer_3);
+      applyCustomFilter(buffer_2, filtered_buffer_2, BUFFER_SIZE);
+      if(getBitCrush() > 0){
+	  applyBitCrush(filtered_buffer_2, BUFFER_SIZE);
+      }
+//      arm_shift_q15(filtered_buffer_2, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
+//                    buffer_2, BUFFER_SIZE);
     }
   } else if (buff_toggle == 1) {
-    passBufferToDAC(buffer_2, hdac);
+    passBufferToDAC(filtered_buffer_2, hdac);
 
     buff_toggle = 2;
 
@@ -413,13 +439,17 @@ void prepBuffer(DAC_HandleTypeDef* hdac) {
 
     if (IIR_filter_active == 1) {
       // arm_float_to_q15(&temp_var, &temp_arm, 1);
-      arm_shift_q15(buffer_1, BIT_SHIFT_Q_CONV, shifted_buffer_1, BUFFER_SIZE);
-      applyFilter(shifted_buffer_1, filtered_buffer_1, shifted_buffer_2);
-      arm_shift_q15(filtered_buffer_1, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
-                    buffer_1, BUFFER_SIZE);
+      //arm_shift_q15(buffer_1, BIT_SHIFT_Q_CONV, shifted_buffer_1, BUFFER_SIZE);
+      //applyFilter(shifted_buffer_1, filtered_buffer_1, shifted_buffer_2);
+      applyCustomFilter(buffer_1, filtered_buffer_1, BUFFER_SIZE);
+      if(getBitCrush() > 0){
+	  applyBitCrush(filtered_buffer_1, BUFFER_SIZE);
+      }
+//      arm_shift_q15(filtered_buffer_1, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
+//                    buffer_1, BUFFER_SIZE);
     }
   } else {
-    passBufferToDAC(buffer_1, hdac);
+    passBufferToDAC(filtered_buffer_1, hdac);
 
     buff_toggle = 0;
 
@@ -431,10 +461,15 @@ void prepBuffer(DAC_HandleTypeDef* hdac) {
     //		q15_t temp_arm = 0;
     if (IIR_filter_active == 1) {
       // arm_float_to_q15(&temp_var, &temp_arm, 1);
-      arm_shift_q15(buffer_3, BIT_SHIFT_Q_CONV, shifted_buffer_3, BUFFER_SIZE);
-      applyFilter(shifted_buffer_3, filtered_buffer_3, shifted_buffer_1);
-      arm_shift_q15(filtered_buffer_3, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
-                    buffer_3, BUFFER_SIZE);
+//      arm_shift_q15(buffer_3, BIT_SHIFT_Q_CONV, shifted_buffer_3, BUFFER_SIZE);
+//      //applyFilter(shifted_buffer_3, filtered_buffer_3, shifted_buffer_1);
+
+      applyCustomFilter(buffer_3, filtered_buffer_3, BUFFER_SIZE);
+      if(getBitCrush() > 0){
+      	  applyBitCrush(filtered_buffer_3, BUFFER_SIZE);
+            }
+//      arm_shift_q15(filtered_buffer_3, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
+//                    buffer_3, BUFFER_SIZE);
     }
   }
 }
@@ -444,6 +479,16 @@ void prepBuffer(DAC_HandleTypeDef* hdac) {
 //		buffer[i] += BUFFER_OFFSET;
 //	}
 //}
+
+void applyBitCrush(q15_t* buffer, uint16_t size){
+  uint32_t bitCrush = getBitCrush();
+
+  arm_shift_q15(buffer, -bitCrush, buffer, size);
+  arm_shift_q15(buffer, bitCrush, buffer, size);
+//  for(uint16_t i=0; i<size; i++){
+//      buffer[i] = (buffer[i] & (~bitCrush) );
+//  }
+}
 
 // UBaseType_t  uxSavedInterruptStatus;
 BaseType_t xYieldRequired;
@@ -542,6 +587,10 @@ void fillBuffer(q15_t* buffer) {
 
 void reset_index(float* freq_ind) { freq_ind = 0; }
 
+int32_t temp_var;
+#define BIT_SMASH_AND	0x0002
+#define BIT_CRUSH_DEPTH	2
+
 void addTableToBuffer(q15_t* buffer, float* freq_inc, float* freq_ind) {
   if ((filter_active == 1) && (skipFilter == 0)) {
     if (lidarModeActive) {
@@ -567,12 +616,28 @@ void addTableToBuffer(q15_t* buffer, float* freq_inc, float* freq_ind) {
       for (int i = 0; i < BUFFER_SIZE; i++) {
         updateLidarInc();
         table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
-        buffer[i] += ampltiude_multiplier * table_val * SCALE_OUTPUT;
+        buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_off;
+//
+//	temp_var = (int32_t) (ampltiude_multiplier * table_val * SCALE_OUTPUT);
+
+        //uint16_t randomInt = rand() % 2;
+
+//        if(randomInt == 1){
+//            //buffer[i] +=  ( (int32_t) (ampltiude_multiplier * table_val * SCALE_OUTPUT) ) & (~BIT_SMASH_AND);
+//
+//        }
+//        else
+//          {
+//            //buffer[i] +=  ( (int32_t) (ampltiude_multiplier * table_val * SCALE_OUTPUT) ) | (BIT_SMASH_AND );
+//          }
+        //buffer[i] += ampltiude_multiplier * SCALE_OUTPUT * ( ( ( (int32_t) (table_val) ) >> 2 ) << 2 );
+
       }
     } else {
       for (int i = 0; i < BUFFER_SIZE; i++) {
         table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
-        buffer[i] += ampltiude_multiplier * table_val * SCALE_OUTPUT;
+        //buffer[i] += ampltiude_multiplier * table_val * SCALE_OUTPUT;
+        buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_off;
       }
     }
   }

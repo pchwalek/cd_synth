@@ -67,8 +67,16 @@ uint32_t get_lidar_POV_map(void){
 
 void LidarMeasurementHandler(volatile int16_t* measurement){
 	if(*measurement > MAX_LIDAR_MEASUREMENT){
-		*measurement = MAX_LIDAR_MEASUREMENT;
+	    turnSoundOff();
+		*measurement = 1;
 	}
+	else{
+	    turnSoundOn();
+	}
+
+	// flip the measurements so high frequencies are when you get close to the disk
+	//*measurement = MAX_LIDAR_MEASUREMENT - *measurement;
+
 
 	// calculate frequency of wavetable based on measurement
 	calcLidarFreq(measurement);
@@ -111,7 +119,7 @@ void LidarMeasurement(void)
 		//LidarMeasurementHandler(&temp_meas);
 		taskENTER_CRITICAL();
 		if(status == VL53L1_RANGESTATUS_RANGE_VALID){
-			//first measruement
+			//first measurement
 			if(measurement_hist == -1){
 				measurement_hist = RangingData.RangeMilliMeter;
 				LidarMeasurementHandler(&RangingData.RangeMilliMeter);

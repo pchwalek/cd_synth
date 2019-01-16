@@ -36,6 +36,9 @@ void switchFilter(const uint16_t* desired_table, int16_t size);
 void setFilter(uint8_t filter);
 void incrementTable(void);
 void activateFilter(uint8_t active);
+void turnSoundOn(void);
+void turnSoundOff(void);
+void applyBitCrush(q15_t* buffer, uint16_t size);
 
 uint8_t isLidarModeActive(void);
 uint8_t isCapModeActive(void);

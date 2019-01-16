@@ -5,6 +5,7 @@
 #include "MMA8451.h"
 #include "wave_synth.h"
 #include "tim.h"
+#include "filter.h"
 
 #define LED_ON		1
 #define LED_OFF		0
@@ -32,6 +33,11 @@ uint8_t first_pass		 = 0;
 uint8_t temp_buffer[6];
 uint8_t button_state = 1;
 
+uint8_t button_10_state = 0;
+
+uint8_t bit_crush = 0;
+uint8_t button_9_state = 0;
+
 void ResistiveTouchSampler(void){
 //	uint8_t start_DMA = 0;
 //	uint8_t start_DMA_2 = 0;
@@ -49,6 +55,7 @@ void ResistiveTouchSampler(void){
 					Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
 					Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
 					setTable('S');
+					resetFilter();
 				}
 			}
 		}
@@ -63,6 +70,7 @@ void ResistiveTouchSampler(void){
 					Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
 					Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
 					setTable('T');
+					resetFilter();
 				}
 			}
 		}
@@ -77,6 +85,7 @@ void ResistiveTouchSampler(void){
 					Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
 					Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
 					setTable('Q');
+					resetFilter();
 				}
 			}
 		}
@@ -91,6 +100,7 @@ void ResistiveTouchSampler(void){
 					Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 1);
 					Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
 					setTable('R');
+					resetFilter();
 				}
 			}
 		}
@@ -105,6 +115,7 @@ void ResistiveTouchSampler(void){
 					Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
 					Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 1);
 					setTable('W');
+					resetFilter();
 				}
 			}
 		}
@@ -232,46 +243,116 @@ void ResistiveTouchSampler(void){
 	//		}
 	//	}
 
+//		if(HAL_GPIO_ReadPin(BUTTON_9_GPIO_Port, BUTTON_9_Pin) == GPIO_PIN_SET){
+//			if ( (HAL_GetTick() - button_9_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
+//				button_9_timeout = HAL_GetTick();
+//				if(LED_State(BUTTON_9_G_REG, BUTTON_9_G_PIN) == LED_OFF){
+//					Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 1);
+//					activateFilter(1);
+//					trigger_table = 1;
+//					first_pass = 1;
+//				}
+//				else{
+//					Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 0);
+//					Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
+//					Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 0);
+//					trigger_table = 0;
+//					activateFilter(0);
+//				}
+//			}
+//		}
+//
+//		if(trigger_table == 1){
+//			if (HAL_GPIO_ReadPin(BUTTON_10_GPIO_Port, BUTTON_10_Pin) == GPIO_PIN_SET || (first_pass == 1) ){
+//				first_pass = 0;
+//
+//				if ( (HAL_GetTick() - button_10_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
+//					button_10_timeout = HAL_GetTick();
+//
+//					if(LED_State(BUTTON_10_G_REG, BUTTON_10_G_PIN) == LED_OFF){
+//						Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 0);
+//						Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 1);
+//						incrementTable();
+//					}
+//
+//					else if(LED_State(BUTTON_10_R_REG, BUTTON_10_R_PIN) == LED_OFF){
+//						Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 1);
+//						Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
+//						incrementTable();
+//					}
+//				}
+//			}
+//		}
+
 		if(HAL_GPIO_ReadPin(BUTTON_9_GPIO_Port, BUTTON_9_Pin) == GPIO_PIN_SET){
-			if ( (HAL_GetTick() - button_9_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
-				button_9_timeout = HAL_GetTick();
-				if(LED_State(BUTTON_9_G_REG, BUTTON_9_G_PIN) == LED_OFF){
-					Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 1);
-					activateFilter(1);
-					trigger_table = 1;
-					first_pass = 1;
-				}
-				else{
-					Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 0);
-					Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
-					Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 0);
-					trigger_table = 0;
-					activateFilter(0);
-				}
-			}
+		  if ( (HAL_GetTick() - button_9_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
+		    button_9_timeout = HAL_GetTick();
+
+		    button_9_state++;
+		    bit_crush++;
+
+		    if(button_9_state == 1){
+		      Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 1);
+		      bit_crush = 4;
+		    }
+		    else if(button_9_state == 2){
+		      Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 1);
+		      Set_LED(BUTTON_9_R_REG, BUTTON_9_R_PIN, 1);
+		      bit_crush = 6;
+		    }
+		    else if(button_9_state == 3){
+		      Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 0);
+		      Set_LED(BUTTON_9_R_REG, BUTTON_9_R_PIN, 1);
+		      bit_crush = 8;
+		    }
+		    else{
+		      Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 0);
+		      Set_LED(BUTTON_9_R_REG, BUTTON_9_R_PIN, 0);
+		      bit_crush = 0;
+		      button_9_state = 0;
+		    }
+//		    else if(bit_crush == 5){
+//		      Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 0);
+//		      Set_LED(BUTTON_9_R_REG, BUTTON_9_R_PIN, 0);
+//		      changeQ(0.8);
+//		      bit_crush = 0;
+//		    }
+
+		  }
 		}
 
-		if(trigger_table == 1){
-			if (HAL_GPIO_ReadPin(BUTTON_10_GPIO_Port, BUTTON_10_Pin) == GPIO_PIN_SET || (first_pass == 1) ){
-				first_pass = 0;
+		if(HAL_GPIO_ReadPin(BUTTON_10_GPIO_Port, BUTTON_10_Pin) == GPIO_PIN_SET){
+		  if ( (HAL_GetTick() - button_10_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
+		    button_10_timeout = HAL_GetTick();
 
-				if ( (HAL_GetTick() - button_10_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
-					button_10_timeout = HAL_GetTick();
+		    button_10_state++;
 
-					if(LED_State(BUTTON_10_G_REG, BUTTON_10_G_PIN) == LED_OFF){
-						Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 0);
-						Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 1);
-						incrementTable();
-					}
+		    if(button_10_state == 1){
+		      Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 1);
+		      changeQ(1);
 
-					else if(LED_State(BUTTON_10_R_REG, BUTTON_10_R_PIN) == LED_OFF){
-						Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 1);
-						Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
-						incrementTable();
-					}
-				}
-			}
+		    }
+		    else if(button_10_state == 2){
+		      Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 1);
+		      Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 1);
+		      changeQ(1.6);
+		    }
+		    else if(button_10_state == 3){
+		      Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
+		      Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 1);
+		      changeQ(2.5);
+		    }
+		    else if(button_10_state == 4){
+		      Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
+		      Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 0);
+		      changeQ(5);
+		      button_10_state = 0;
+		    }
+
+		  }
 		}
+
+
 
 
 	//	if(start_DMA){
@@ -289,10 +370,14 @@ void ResistiveTouchSampler(void){
 	}
 }
 
+uint8_t getBitCrush(void){
+  return bit_crush;
+}
+
 void buttonStateMachine(void){
 	// if accelerometer is enabled, start FreeRTOS Thread Timer
 	if( (LED_State(BUTTON_4_G_REG, BUTTON_4_G_PIN) == LED_ON) && (accTimer == 0)){
-		osTimerStart(accSampleTimerHandle, 100);
+		osTimerStart(accSampleTimerHandle, 20);
 		accTimer = 1;
 	}else if ( (LED_State(BUTTON_4_G_REG, BUTTON_4_G_PIN) == LED_OFF) && (accTimer == 1) ){
 		osTimerStop(accSampleTimerHandle);

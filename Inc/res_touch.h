@@ -58,5 +58,6 @@ void buttonStateMachine(void);
 void disable_buttons(void);
 void enable_buttons(void);
 uint8_t isButtonEnabled(void);
+uint8_t getBitCrush(void);
 
 #endif

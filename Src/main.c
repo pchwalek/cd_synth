@@ -222,7 +222,7 @@ int main(void)
   //    ADC_Enable(&hadc1);
   //    HAL_ADC_Start_IT(&hadc1);
 
-  initFilter();
+  //initFilter();
 
   // start comparator for HALL effect sensor
   HAL_COMP_Start(&hcomp1);
