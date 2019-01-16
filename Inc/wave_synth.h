@@ -39,6 +39,9 @@ void activateFilter(uint8_t active);
 void turnSoundOn(void);
 void turnSoundOff(void);
 void applyBitCrush(q15_t* buffer, uint16_t size);
+void setPreWave(uint8_t desWave);
+void setPostWave(uint8_t desWave);
+void applyWaveshape(q15_t* buffer, uint16_t size);
 
 uint8_t isLidarModeActive(void);
 uint8_t isCapModeActive(void);

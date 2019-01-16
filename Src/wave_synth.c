@@ -10,6 +10,7 @@
 #include "hall_effect.h"
 #include "filter.h"
 #include "arm_math.h"
+#include "res_touch.h"
 
 #include "stdlib.h"
 
@@ -21,7 +22,6 @@
 #define DAC_FREQ 40000.0  // 50kHz
 #define LIDAR_INTERPOLATE 0.0128  //  BUFFER_SIZE/DAC_FREQ
 
-#define BUFFER_OFFSET 1024
 //#define BUFFER_OFFSET 512
 #define SCALE_OUTPUT 4
 
@@ -71,6 +71,10 @@
 
 #define ALPHA_DELTA_FREQ	0.005
 
+#define UPPER_BOUND 	2048
+#define BUFFER_OFFSET 	1024
+#define LOWER_BOUND	0
+
 int16_t input_val = 0;
 
 int32_t index_1 = 0;
@@ -85,6 +89,9 @@ int32_t index_9 = 0;
 int32_t index_10 = 0;
 int32_t index_11 = 0;
 int32_t index_12 = 0;
+
+uint8_t preWaveshape = 0;
+uint8_t postWaveshape = 0;
 
 q15_t temp[BUFFER_SIZE];
 
@@ -256,24 +263,24 @@ void setFilter(uint8_t filter) {
     case 4:
       switchFilter(Env3, sizeof(Env3) >> 1);
       break;
-    case 5:
-      switchFilter(WAVESHAPE_SIGMOID_DATA, sizeof(WAVESHAPE_SIGMOID_DATA) >> 1);
-      break;
-    case 6:
-      switchFilter(WAVESHAPE_TANH_DATA, sizeof(WAVESHAPE_TANH_DATA) >> 1);
-      break;
-    case 7:
-      switchFilter(CHEBYSHEV_3TH_256_DATA, sizeof(CHEBYSHEV_3TH_256_DATA) >> 1);
-      break;
-    case 8:
-      switchFilter(CHEBYSHEV_4TH_256_DATA, sizeof(CHEBYSHEV_4TH_256_DATA) >> 1);
-      break;
-    case 9:
-      switchFilter(CHEBYSHEV_5TH_256_DATA, sizeof(CHEBYSHEV_5TH_256_DATA) >> 1);
-      break;
-    case 10:
-      switchFilter(CHEBYSHEV_6TH_256_DATA, sizeof(CHEBYSHEV_6TH_256_DATA) >> 1);
-      break;
+//    case 5:
+//      switchFilter(WAVESHAPE_SIGMOID_DATA, sizeof(WAVESHAPE_SIGMOID_DATA) >> 1);
+//      break;
+//    case 6:
+//      switchFilter(WAVESHAPE_TANH_DATA, sizeof(WAVESHAPE_TANH_DATA) >> 1);
+//      break;
+//    case 7:
+//      switchFilter(CHEBYSHEV_3TH_256_DATA, sizeof(CHEBYSHEV_3TH_256_DATA) >> 1);
+//      break;
+//    case 8:
+//      switchFilter(CHEBYSHEV_4TH_256_DATA, sizeof(CHEBYSHEV_4TH_256_DATA) >> 1);
+//      break;
+//    case 9:
+//      switchFilter(CHEBYSHEV_5TH_256_DATA, sizeof(CHEBYSHEV_5TH_256_DATA) >> 1);
+//      break;
+//    case 10:
+//      switchFilter(CHEBYSHEV_6TH_256_DATA, sizeof(CHEBYSHEV_6TH_256_DATA) >> 1);
+//      break;
     default:
       switchFilter(Env3, sizeof(Env3) >> 1);
       break;
@@ -376,9 +383,9 @@ void DAC_BufferRefresh(void) {
     // osSemaphoreWait( DAC_SemaphoreHandle, osWaitForever);
     // vTaskSuspendAll(  );
     taskENTER_CRITICAL();
-    taskDISABLE_INTERRUPTS();
+    //taskDISABLE_INTERRUPTS();
     prepBuffer(&hdac1);
-    taskENABLE_INTERRUPTS();
+    //taskENABLE_INTERRUPTS();
     taskEXIT_CRITICAL();
     // xTaskResumeAll();
     vTaskSuspend(NULL);
@@ -420,10 +427,16 @@ void prepBuffer(DAC_HandleTypeDef* hdac) {
       // arm_float_to_q15(&temp_var, &temp_arm, 1);
       //arm_shift_q15(buffer_2, BIT_SHIFT_Q_CONV, shifted_buffer_2, BUFFER_SIZE);
       //applyFilter(shifted_buffer_2, filtered_buffer_2, shifted_buffer_3);
-      applyCustomFilter(buffer_2, filtered_buffer_2, BUFFER_SIZE);
       if(getBitCrush() > 0){
-	  applyBitCrush(filtered_buffer_2, BUFFER_SIZE);
+	  applyBitCrush(buffer_2, BUFFER_SIZE);
       }
+
+      applyCustomFilter(buffer_2, filtered_buffer_2, BUFFER_SIZE);
+
+      if(postWaveshape > 0){
+	  applyWaveshape(filtered_buffer_2, BUFFER_SIZE);
+      }
+
 //      arm_shift_q15(filtered_buffer_2, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
 //                    buffer_2, BUFFER_SIZE);
     }
@@ -441,9 +454,14 @@ void prepBuffer(DAC_HandleTypeDef* hdac) {
       // arm_float_to_q15(&temp_var, &temp_arm, 1);
       //arm_shift_q15(buffer_1, BIT_SHIFT_Q_CONV, shifted_buffer_1, BUFFER_SIZE);
       //applyFilter(shifted_buffer_1, filtered_buffer_1, shifted_buffer_2);
-      applyCustomFilter(buffer_1, filtered_buffer_1, BUFFER_SIZE);
       if(getBitCrush() > 0){
-	  applyBitCrush(filtered_buffer_1, BUFFER_SIZE);
+	  applyBitCrush(buffer_1, BUFFER_SIZE);
+      }
+
+      applyCustomFilter(buffer_1, filtered_buffer_1, BUFFER_SIZE);
+
+      if(postWaveshape > 0){
+	applyWaveshape(filtered_buffer_1, BUFFER_SIZE);
       }
 //      arm_shift_q15(filtered_buffer_1, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
 //                    buffer_1, BUFFER_SIZE);
@@ -464,10 +482,15 @@ void prepBuffer(DAC_HandleTypeDef* hdac) {
 //      arm_shift_q15(buffer_3, BIT_SHIFT_Q_CONV, shifted_buffer_3, BUFFER_SIZE);
 //      //applyFilter(shifted_buffer_3, filtered_buffer_3, shifted_buffer_1);
 
-      applyCustomFilter(buffer_3, filtered_buffer_3, BUFFER_SIZE);
       if(getBitCrush() > 0){
-      	  applyBitCrush(filtered_buffer_3, BUFFER_SIZE);
+      	  applyBitCrush(buffer_3, BUFFER_SIZE);
             }
+
+      applyCustomFilter(buffer_3, filtered_buffer_3, BUFFER_SIZE);
+
+      if(postWaveshape > 0){
+	applyWaveshape(filtered_buffer_3, BUFFER_SIZE);
+      }
 //      arm_shift_q15(filtered_buffer_3, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
 //                    buffer_3, BUFFER_SIZE);
     }
@@ -616,6 +639,13 @@ void addTableToBuffer(q15_t* buffer, float* freq_inc, float* freq_ind) {
       for (int i = 0; i < BUFFER_SIZE; i++) {
         updateLidarInc();
         table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
+
+        if(preWaveshape > 0){
+            if(preWaveshape == 1) table_val = WAVESHAPE_CHEBYSHEV_4TH_256_DATATANH_DATA[table_val+127];
+            else if(preWaveshape == 2) table_val = WAVESHAPE_SIGMOID_DATA[table_val+127];
+            else if(preWaveshape == 3) table_val = WAVESHAPE_TANH_DATA[table_val+127];
+        }
+
         buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_off;
 //
 //	temp_var = (int32_t) (ampltiude_multiplier * table_val * SCALE_OUTPUT);
@@ -636,6 +666,8 @@ void addTableToBuffer(q15_t* buffer, float* freq_inc, float* freq_ind) {
     } else {
       for (int i = 0; i < BUFFER_SIZE; i++) {
         table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
+
+//        table_val = table_val[WAVESHAPE_CHEBYSHEV_4TH_256_DATATANH_DATA+127];
         //buffer[i] += ampltiude_multiplier * table_val * SCALE_OUTPUT;
         buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_off;
       }
@@ -729,3 +761,28 @@ void decrementOctave(void) {
     switchOctave(octave);
   }
 }
+
+void setPreWave(uint8_t desWave){
+  preWaveshape = desWave;
+}
+
+void setPostWave(uint8_t desWave){
+  preWaveshape = desWave;
+}
+
+void applyWaveshape(q15_t* buffer, uint16_t size){
+
+  uint8_t index;
+
+  for(uint16_t i = 0; i<size; i++){
+    if(buffer[i] > UPPER_BOUND) buffer[i] == UPPER_BOUND;
+    else if (buffer[i] < LOWER_BOUND) buffer[i] == LOWER_BOUND;
+
+    index = round(255 * (buffer[i] - LOWER_BOUND) / ((float) UPPER_BOUND - LOWER_BOUND));
+
+    if(postWaveshape == 1) buffer[i] = WAVESHAPE_CHEBYSHEV_4TH_256_DATATANH_DATA[index];
+    else if(postWaveshape == 2) buffer[i] = WAVESHAPE_SIGMOID_DATA[index];
+    else if(postWaveshape == 3) buffer[i] = WAVESHAPE_TANH_DATA[index];
+  }
+}
+
