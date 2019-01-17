@@ -130,9 +130,6 @@ void Error_Handler(void);
 #define VL_INT_Pin GPIO_PIN_8
 #define VL_INT_GPIO_Port GPIOA
 #define VL_INT_EXTI_IRQn EXTI9_5_IRQn
-#define HALL_INT_Pin GPIO_PIN_15
-#define HALL_INT_GPIO_Port GPIOA
-#define HALL_INT_EXTI_IRQn EXTI15_10_IRQn
 #define HALL_CNTRL_Pin GPIO_PIN_6
 #define HALL_CNTRL_GPIO_Port GPIOD
 #define SD_CARD_EN_Pin GPIO_PIN_7

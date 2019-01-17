@@ -14,6 +14,6 @@ void adjustFilterCutoff(float desired_cutoff);
 void applyCustomFilter(q15_t* input_buffer, q15_t* output_buffer, uint16_t size);
 double angleToCutoffFreq(float inputAngle);
 void changeQ(double new_Q);
-void resetFilter();
+void resetFilterHistory(void);
 
 #endif

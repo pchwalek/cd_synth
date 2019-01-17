@@ -23,7 +23,7 @@
 #define LIDAR_INTERPOLATE 0.0128  //  BUFFER_SIZE/DAC_FREQ
 
 //#define BUFFER_OFFSET 512
-#define SCALE_OUTPUT 4
+#define SCALE_OUTPUT 2
 
 #define FILTER_CNT 11
 
@@ -121,7 +121,7 @@ uint8_t buff_toggle = 0;
 int16_t max_table_index = 255;
 uint8_t octave = 4;
 
-uint8_t signal_off = 1;
+uint8_t signal_on = 1;
 // uint8_t wave = 1;
 
 float freq_1_inc;
@@ -188,11 +188,125 @@ uint8_t skipFilter = 0;
 
 uint8_t IIR_filter_active = 1;
 
+uint8_t lowPassFilter_state = 0;
+
 // UBaseType_t  uxSavedInterruptStatus;
+
+void prepBuffer(DAC_HandleTypeDef* hdac) {
+  if (temp_2) {
+    temp_2 = 0;
+    switchTable(SinTable, sizeof(SinTable) >> 1);
+    clearBuffer(buffer_3);
+    setCutoffFreq(.9);
+  }
+
+  // determine which buffer to fill
+  if (buff_toggle == 0) {
+    passBufferToDAC(filtered_buffer_3, hdac);
+
+    buff_toggle = 1;
+
+    clearBuffer(buffer_2);
+    // fill buffer depending on what button is being pressed
+    fillBuffer(buffer_2);
+
+
+      // arm_float_to_q15(&temp_var, &temp_arm, 1);
+      //arm_shift_q15(buffer_2, BIT_SHIFT_Q_CONV, shifted_buffer_2, BUFFER_SIZE);
+      //applyFilter(shifted_buffer_2, filtered_buffer_2, shifted_buffer_3);
+      if(getBitCrush() > 0){
+	  applyBitCrush(buffer_2, BUFFER_SIZE);
+      }
+
+      if(lowPassFilter_state == 1){
+       applyCustomFilter(buffer_2, filtered_buffer_2, BUFFER_SIZE);
+      }
+      else{
+	  memcpy(filtered_buffer_2, buffer_2, sizeof(filtered_buffer_2) );
+      }
+
+      if(postWaveshape > 0){
+	  applyWaveshape(filtered_buffer_2, BUFFER_SIZE);
+      }
+
+//      arm_shift_q15(filtered_buffer_2, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
+//                    buffer_2, BUFFER_SIZE);
+
+  } else if (buff_toggle == 1) {
+    passBufferToDAC(filtered_buffer_2, hdac);
+
+    buff_toggle = 2;
+
+    clearBuffer(buffer_1);
+    // fill buffer depending on what button is being pressed
+    fillBuffer(buffer_1);
+    // addOffsetToBuffer(buffer_2);
+
+      // arm_float_to_q15(&temp_var, &temp_arm, 1);
+      //arm_shift_q15(buffer_1, BIT_SHIFT_Q_CONV, shifted_buffer_1, BUFFER_SIZE);
+      //applyFilter(shifted_buffer_1, filtered_buffer_1, shifted_buffer_2);
+      if(getBitCrush() > 0){
+	  applyBitCrush(buffer_1, BUFFER_SIZE);
+      }
+
+      if(lowPassFilter_state == 1){
+      	 applyCustomFilter(buffer_1, filtered_buffer_1, BUFFER_SIZE);
+	}
+      else{
+	  memcpy(filtered_buffer_1, buffer_1, sizeof(filtered_buffer_1));
+	}
+
+      if(postWaveshape > 0){
+	applyWaveshape(filtered_buffer_1, BUFFER_SIZE);
+      }
+//      arm_shift_q15(filtered_buffer_1, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
+//                    buffer_1, BUFFER_SIZE);
+
+  } else {
+    passBufferToDAC(filtered_buffer_1, hdac);
+
+    buff_toggle = 0;
+
+    clearBuffer(buffer_3);
+    // fill buffer depending on what button is being pressed
+    fillBuffer(buffer_3);
+    // addOffsetToBuffer(buffer_2);
+    //		float temp_var = 0.9999999999999;
+    //		q15_t temp_arm = 0;
+      // arm_float_to_q15(&temp_var, &temp_arm, 1);
+//      arm_shift_q15(buffer_3, BIT_SHIFT_Q_CONV, shifted_buffer_3, BUFFER_SIZE);
+//      //applyFilter(shifted_buffer_3, filtered_buffer_3, shifted_buffer_1);
+
+      if(getBitCrush() > 0){
+      	  applyBitCrush(buffer_3, BUFFER_SIZE);
+            }
+
+      if(lowPassFilter_state == 1){
+	 applyCustomFilter(buffer_3, filtered_buffer_3, BUFFER_SIZE);
+      }
+      else{
+	  memcpy(filtered_buffer_3, buffer_3, sizeof(filtered_buffer_3));
+      }
+
+      if(postWaveshape > 0){
+	applyWaveshape(filtered_buffer_3, BUFFER_SIZE);
+      }
+//      arm_shift_q15(filtered_buffer_3, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
+//                    buffer_3, BUFFER_SIZE);
+
+  }
+}
 
 void setWavetableAmplitude(uint8_t* intTracker) {
   ampltiude_multiplier = (*intTracker) / ((float)ROTATION_STEPS - 1);
   // ampltiude_multiplier = 1;
+}
+
+void activateLowpassFilter(uint8_t activate){
+  lowPassFilter_state = activate;
+  if(activate == 1){
+      resetFilterHistory();
+  }
 }
 
 void activateFilter(uint8_t active) {
@@ -216,11 +330,11 @@ uint8_t isCapModeActive(void) {
 }
 
 void turnSoundOff(void){
-  signal_off = 0;
+  signal_on = 0;
 }
 
 void turnSoundOn(void){
-  signal_off = 1;
+  signal_on = 1;
 }
 
 void setTable(char table) {
@@ -332,18 +446,19 @@ void calcLidarFreq(int16_t* measurement) {
 
   if (freq_lidar_new > 18000) freq_lidar_new = 18000;
 
-  if (freq_lidar_new == freq_lidar)
+  if (freq_lidar_new == freq_lidar){
     freq_lidar_step = 0;
-  else {
-    // linear interpolate frequency steps
-    // 		find out how many approximatley how many buffers you will fill until
-    // next lidar reading
-//    freq_lidar_step = ((freq_lidar_new - freq_lidar) /
-//                       (((time_delta / LIDAR_INTERPOLATE)) * 512));
-
-//    freq_lidar_step = ((freq_lidar_new - freq_lidar) /
-//                           (((time_delta / 40000))));
   }
+//  else {
+//    // linear interpolate frequency steps
+//    // 		find out how many approximatley how many buffers you will fill until
+//    // next lidar reading
+////    freq_lidar_step = ((freq_lidar_new - freq_lidar) /
+////                       (((time_delta / LIDAR_INTERPOLATE)) * 512));
+//
+////    freq_lidar_step = ((freq_lidar_new - freq_lidar) /
+////                           (((time_delta / 40000))));
+//  }
 
   freq_lidar_inc = (freq_lidar / ((float)DAC_FREQ)) * max_table_index;
 }
@@ -405,97 +520,7 @@ void switchFilter(const uint16_t* desired_table, int16_t size) {
   filter = desired_table;
 }
 
-void prepBuffer(DAC_HandleTypeDef* hdac) {
-  if (temp_2) {
-    temp_2 = 0;
-    switchTable(SinTable, sizeof(SinTable) >> 1);
-    clearBuffer(buffer_3);
-    setCutoffFreq(.9);
-  }
 
-  // determine which buffer to fill
-  if (buff_toggle == 0) {
-    passBufferToDAC(filtered_buffer_3, hdac);
-
-    buff_toggle = 1;
-
-    clearBuffer(buffer_2);
-    // fill buffer depending on what button is being pressed
-    fillBuffer(buffer_2);
-
-    if (IIR_filter_active == 1) {
-      // arm_float_to_q15(&temp_var, &temp_arm, 1);
-      //arm_shift_q15(buffer_2, BIT_SHIFT_Q_CONV, shifted_buffer_2, BUFFER_SIZE);
-      //applyFilter(shifted_buffer_2, filtered_buffer_2, shifted_buffer_3);
-      if(getBitCrush() > 0){
-	  applyBitCrush(buffer_2, BUFFER_SIZE);
-      }
-
-      applyCustomFilter(buffer_2, filtered_buffer_2, BUFFER_SIZE);
-
-      if(postWaveshape > 0){
-	  applyWaveshape(filtered_buffer_2, BUFFER_SIZE);
-      }
-
-//      arm_shift_q15(filtered_buffer_2, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
-//                    buffer_2, BUFFER_SIZE);
-    }
-  } else if (buff_toggle == 1) {
-    passBufferToDAC(filtered_buffer_2, hdac);
-
-    buff_toggle = 2;
-
-    clearBuffer(buffer_1);
-    // fill buffer depending on what button is being pressed
-    fillBuffer(buffer_1);
-    // addOffsetToBuffer(buffer_2);
-
-    if (IIR_filter_active == 1) {
-      // arm_float_to_q15(&temp_var, &temp_arm, 1);
-      //arm_shift_q15(buffer_1, BIT_SHIFT_Q_CONV, shifted_buffer_1, BUFFER_SIZE);
-      //applyFilter(shifted_buffer_1, filtered_buffer_1, shifted_buffer_2);
-      if(getBitCrush() > 0){
-	  applyBitCrush(buffer_1, BUFFER_SIZE);
-      }
-
-      applyCustomFilter(buffer_1, filtered_buffer_1, BUFFER_SIZE);
-
-      if(postWaveshape > 0){
-	applyWaveshape(filtered_buffer_1, BUFFER_SIZE);
-      }
-//      arm_shift_q15(filtered_buffer_1, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
-//                    buffer_1, BUFFER_SIZE);
-    }
-  } else {
-    passBufferToDAC(filtered_buffer_1, hdac);
-
-    buff_toggle = 0;
-
-    clearBuffer(buffer_3);
-    // fill buffer depending on what button is being pressed
-    fillBuffer(buffer_3);
-    // addOffsetToBuffer(buffer_2);
-    //		float temp_var = 0.9999999999999;
-    //		q15_t temp_arm = 0;
-    if (IIR_filter_active == 1) {
-      // arm_float_to_q15(&temp_var, &temp_arm, 1);
-//      arm_shift_q15(buffer_3, BIT_SHIFT_Q_CONV, shifted_buffer_3, BUFFER_SIZE);
-//      //applyFilter(shifted_buffer_3, filtered_buffer_3, shifted_buffer_1);
-
-      if(getBitCrush() > 0){
-      	  applyBitCrush(buffer_3, BUFFER_SIZE);
-            }
-
-      applyCustomFilter(buffer_3, filtered_buffer_3, BUFFER_SIZE);
-
-      if(postWaveshape > 0){
-	applyWaveshape(filtered_buffer_3, BUFFER_SIZE);
-      }
-//      arm_shift_q15(filtered_buffer_3, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
-//                    buffer_3, BUFFER_SIZE);
-    }
-  }
-}
 //
 // void addOffsetToBuffer(q15_t* buffer){
 //	for(int i = 0; i < BUFFER_SIZE; i++){
@@ -528,8 +553,8 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac) {
 
 void passBufferToDAC(q15_t* buffer, DAC_HandleTypeDef* hdac) {
   HAL_GPIO_TogglePin(LED_LAT_GPIO_Port, LED_LAT_Pin);
-  HAL_DAC_Start_DMA(hdac, DAC_CHANNEL_1, (uint32_t*)buffer, 512,
-                    DAC_ALIGN_12B_R);
+  while(HAL_OK != HAL_DAC_Start_DMA(hdac, DAC_CHANNEL_1, (uint32_t*)buffer, 512,
+                    DAC_ALIGN_12B_R));
 }
 
 void clearBuffer(q15_t* buffer) {
@@ -615,26 +640,26 @@ int32_t temp_var;
 #define BIT_CRUSH_DEPTH	2
 
 void addTableToBuffer(q15_t* buffer, float* freq_inc, float* freq_ind) {
-  if ((filter_active == 1) && (skipFilter == 0)) {
-    if (lidarModeActive) {
-      for (int i = 0; i < BUFFER_SIZE; i++) {
-        updateLidarInc();
-        table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
-        // ew... this code gets messy given that the if statement will be
-        // checked at 40kHz (LOL)
-        buffer[i] +=
-            ampltiude_multiplier * filter_multiplier(&table_val) * SCALE_OUTPUT;
-      }
-    } else {
-      for (int i = 0; i < BUFFER_SIZE; i++) {
-        // ew... this code gets messy given that the if statement will be
-        // checked at 40kHz (LOL)
-        table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
-        buffer[i] +=
-            ampltiude_multiplier * filter_multiplier(&table_val) * SCALE_OUTPUT;
-      }
-    }
-  } else {
+//  if ((filter_active == 1) && (skipFilter == 0)) {
+//    if (lidarModeActive) {
+//      for (int i = 0; i < BUFFER_SIZE; i++) {
+//        updateLidarInc();
+//        table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
+//        // ew... this code gets messy given that the if statement will be
+//        // checked at 40kHz (LOL)
+//        buffer[i] +=
+//            ampltiude_multiplier * filter_multiplier(&table_val) * SCALE_OUTPUT;
+//      }
+//    } else {
+//      for (int i = 0; i < BUFFER_SIZE; i++) {
+//        // ew... this code gets messy given that the if statement will be
+//        // checked at 40kHz (LOL)
+//        table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
+//        buffer[i] +=
+//            ampltiude_multiplier * filter_multiplier(&table_val) * SCALE_OUTPUT;
+//      }
+//    }
+//  } else {
     if (lidarModeActive) {
       for (int i = 0; i < BUFFER_SIZE; i++) {
         updateLidarInc();
@@ -646,7 +671,7 @@ void addTableToBuffer(q15_t* buffer, float* freq_inc, float* freq_ind) {
             else if(preWaveshape == 3) table_val = WAVESHAPE_TANH_DATA[table_val+127];
         }
 
-        buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_off;
+        buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_on;
 //
 //	temp_var = (int32_t) (ampltiude_multiplier * table_val * SCALE_OUTPUT);
 
@@ -663,16 +688,25 @@ void addTableToBuffer(q15_t* buffer, float* freq_inc, float* freq_ind) {
         //buffer[i] += ampltiude_multiplier * SCALE_OUTPUT * ( ( ( (int32_t) (table_val) ) >> 2 ) << 2 );
 
       }
-    } else {
+    }
+    else {
       for (int i = 0; i < BUFFER_SIZE; i++) {
-        table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
-
 //        table_val = table_val[WAVESHAPE_CHEBYSHEV_4TH_256_DATATANH_DATA+127];
         //buffer[i] += ampltiude_multiplier * table_val * SCALE_OUTPUT;
-        buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_off;
+        //buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_on;
+
+        table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
+
+        if(preWaveshape > 0){
+            if(preWaveshape == 1) table_val = WAVESHAPE_CHEBYSHEV_4TH_256_DATATANH_DATA[table_val+127];
+            else if(preWaveshape == 2) table_val = WAVESHAPE_SIGMOID_DATA[table_val+127];
+            else if(preWaveshape == 3) table_val = WAVESHAPE_TANH_DATA[table_val+127];
+        }
+
+        buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_on;
       }
     }
-  }
+
 }
 
 q15_t filter_multiplier(int16_t* waveTable) {

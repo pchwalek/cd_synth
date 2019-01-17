@@ -180,20 +180,12 @@ void StartDefaultTask(void const * argument)
 
   osThreadDef(lidarMeasurementTask, LidarMeasurement, osPriorityLow, 0, 256);
   lidarMeasurementHandle = osThreadCreate(osThread(lidarMeasurementTask), NULL);
-//
-  osThreadDef(capSampleTask, Sample_Cap_Touch, osPriorityLow, 0, 256);
+
+  osThreadDef(capSampleTask, Sample_Cap_Touch, osPriorityNormal, 0, 256);
   capSampleHandle = osThreadCreate(osThread(capSampleTask), NULL);
 
   osThreadDef(accSampleTask, accelerometerThread, osPriorityLow, 0, 256);
   accSampleHandle = osThreadCreate(osThread(accSampleTask), NULL);
-
-//  osThreadDef(DAC_BufferRefreshTask, DAC_BufferRefresh, osPriorityRealtime, 0, 2048);
-//  DAC_BufferRefreshHandle = osThreadCreate(osThread(DAC_BufferRefreshTask), NULL);
-
-//  osSemaphoreDef(DAC_Semaphore);
-//  DAC_SemaphoreHandle = osSemaphoreCreate (osSemaphore(DAC_Semaphore), 1);
-
-  //osTimerStart(capSampleTimerHandle, 40);
 
   /* Infinite loop */
   for(;;)

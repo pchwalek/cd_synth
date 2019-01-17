@@ -750,6 +750,17 @@ void Set_LED(uint8_t reg, uint8_t pin, uint8_t state) {
   transmitToBuffer();
 }
 
+void Set_LED_Setting(uint8_t reg, uint8_t pin, uint8_t state) {
+  // turn on LED
+  if (state == 1) {
+    LED_SETTINGS[reg] &= ~pin;
+  }
+  // turn off LED
+  else if (state == 0) {
+    LED_SETTINGS[reg] |= pin;
+  }
+}
+
 // returns 1 if LED is on, 0 otherwise
 // LED is on if the bit in LED_SETTINGS is zero (because its a sink circuit)
 uint8_t LED_State(uint8_t reg, uint8_t pin) {

@@ -124,5 +124,6 @@ uint8_t LED_State(uint8_t reg, uint8_t pin);
 void visualizationRun(uint8_t visNum, uint32_t cyclePerHalfTurn);
 void updatePOV_LidarMatricies(uint32_t lidarPOV_Map);
 void setMatrix(uint8_t matrix[][MESSAGE_WIDTH], uint32_t size, uint16_t length, uint8_t reverse);
+void Set_LED_Setting(uint8_t reg, uint8_t pin, uint8_t state);
 
 #endif

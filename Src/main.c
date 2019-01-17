@@ -454,11 +454,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 //	  }
 	  //LidarMeasurement();
   }
-  else if(GPIO_Pin == HALL_INT_Pin){
-	  //LED_state++;
-//	  Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, LED_state%2);
-	  //HALL_Handler();
-  }
+//  else if(GPIO_Pin == HALL_INT_Pin){
+//	  //LED_state++;
+////	  Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, LED_state%2);
+//	  //HALL_Handler();
+//  }
   else{
 	  ResistiveTouchSampler();
   }

@@ -52,13 +52,12 @@ void ResistiveTouchSampler(void){
 			if(LED_State(BUTTON_1_G_REG, BUTTON_1_G_PIN) == LED_OFF){
 				if ( (HAL_GetTick() - button_1_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
 					button_1_timeout = HAL_GetTick();
-					Set_LED(BUTTON_1_G_REG, BUTTON_1_G_PIN, 1);
-					Set_LED(BUTTON_2_G_REG, BUTTON_2_G_PIN, 0);
-					Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, 0);
+					Set_LED_Setting(BUTTON_1_G_REG, BUTTON_1_G_PIN, 1);
+					Set_LED_Setting(BUTTON_2_G_REG, BUTTON_2_G_PIN, 0);
+					Set_LED_Setting(BUTTON_3_G_REG, BUTTON_3_G_PIN, 0);
 					//Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
 					//Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
 					setTable('S');
-					resetFilter();
 				}
 			}
 		}
@@ -67,13 +66,12 @@ void ResistiveTouchSampler(void){
 			if(LED_State(BUTTON_2_G_REG, BUTTON_2_G_PIN) == LED_OFF){
 				if ( (HAL_GetTick() - button_2_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
 					button_2_timeout = HAL_GetTick();
-					Set_LED(BUTTON_1_G_REG, BUTTON_1_G_PIN, 0);
-					Set_LED(BUTTON_2_G_REG, BUTTON_2_G_PIN, 1);
-					Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, 0);
-					//Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
-					//Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
+					Set_LED_Setting(BUTTON_1_G_REG, BUTTON_1_G_PIN, 0);
+					Set_LED_Setting(BUTTON_2_G_REG, BUTTON_2_G_PIN, 1);
+					Set_LED_Setting(BUTTON_3_G_REG, BUTTON_3_G_PIN, 0);
+					//Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
+					//Set_LED_Setting(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
 					setTable('W');
-					resetFilter();
 				}
 			}
 		}
@@ -82,13 +80,12 @@ void ResistiveTouchSampler(void){
 			if(LED_State(BUTTON_3_G_REG, BUTTON_3_G_PIN) == LED_OFF){
 				if ( (HAL_GetTick() - button_3_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
 					button_3_timeout = HAL_GetTick();
-					Set_LED(BUTTON_1_G_REG, BUTTON_1_G_PIN, 0);
-					Set_LED(BUTTON_2_G_REG, BUTTON_2_G_PIN, 0);
-					Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, 1);
-					//Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
-					//Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
+					Set_LED_Setting(BUTTON_1_G_REG, BUTTON_1_G_PIN, 0);
+					Set_LED_Setting(BUTTON_2_G_REG, BUTTON_2_G_PIN, 0);
+					Set_LED_Setting(BUTTON_3_G_REG, BUTTON_3_G_PIN, 1);
+					//Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
+					//Set_LED_Setting(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
 					setTable('Q');
-					resetFilter();
 				}
 			}
 		}
@@ -97,11 +94,11 @@ void ResistiveTouchSampler(void){
 //			if(LED_State(BUTTON_7_G_REG, BUTTON_7_G_PIN) == LED_OFF){
 //				if ( (HAL_GetTick() - button_7_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
 //					button_7_timeout = HAL_GetTick();
-//					Set_LED(BUTTON_1_G_REG, BUTTON_1_G_PIN, 0);
-//					Set_LED(BUTTON_2_G_REG, BUTTON_2_G_PIN, 0);
-//					Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, 0);
-//					//Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 1);
-//					//Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
+//					Set_LED_Setting(BUTTON_1_G_REG, BUTTON_1_G_PIN, 0);
+//					Set_LED_Setting(BUTTON_2_G_REG, BUTTON_2_G_PIN, 0);
+//					Set_LED_Setting(BUTTON_3_G_REG, BUTTON_3_G_PIN, 0);
+//					//Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 1);
+//					//Set_LED_Setting(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
 //					setTable('T');
 //					resetFilter();
 //				}
@@ -112,11 +109,11 @@ void ResistiveTouchSampler(void){
 //			if(LED_State(BUTTON_8_G_REG, BUTTON_8_G_PIN) == LED_OFF){
 //				if ( (HAL_GetTick() - button_8_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
 //					button_8_timeout = HAL_GetTick();
-//					Set_LED(BUTTON_1_G_REG, BUTTON_1_G_PIN, 0);
-//					Set_LED(BUTTON_2_G_REG, BUTTON_2_G_PIN, 0);
-//					Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, 0);
-//					//Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
-//					//Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 1);
+//					Set_LED_Setting(BUTTON_1_G_REG, BUTTON_1_G_PIN, 0);
+//					Set_LED_Setting(BUTTON_2_G_REG, BUTTON_2_G_PIN, 0);
+//					Set_LED_Setting(BUTTON_3_G_REG, BUTTON_3_G_PIN, 0);
+//					//Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
+//					//Set_LED_Setting(BUTTON_8_G_REG, BUTTON_8_G_PIN, 1);
 //					setTable('W');
 //					resetFilter();
 //				}
@@ -125,7 +122,7 @@ void ResistiveTouchSampler(void){
 
 	//	if(HAL_GPIO_ReadPin(BUTTON_1_GPIO_Port, BUTTON_1_Pin) == GPIO_PIN_SET){
 	//		if(LED_State(BUTTON_1_R_REG, BUTTON_1_R_PIN) == LED_OFF){
-	//			Set_LED(BUTTON_1_R_REG, BUTTON_1_R_PIN, 1);
+	//			Set_LED_Setting(BUTTON_1_R_REG, BUTTON_1_R_PIN, 1);
 	//			start_DMA = 1;
 	//		}
 	//
@@ -137,7 +134,7 @@ void ResistiveTouchSampler(void){
 	//	}
 	//	else{
 	//		if(LED_State(BUTTON_1_R_REG, BUTTON_1_R_PIN) == LED_ON){
-	//			Set_LED(BUTTON_1_R_REG, BUTTON_1_R_PIN, 0);
+	//			Set_LED_Setting(BUTTON_1_R_REG, BUTTON_1_R_PIN, 0);
 	//		}
 	////		if(index_1 >= 0){
 	////			index_1 = -1;
@@ -146,25 +143,25 @@ void ResistiveTouchSampler(void){
 	//
 	//	if(HAL_GPIO_ReadPin(BUTTON_2_GPIO_Port, BUTTON_2_Pin) == GPIO_PIN_SET){
 	//		if(LED_State(BUTTON_2_R_REG, BUTTON_2_R_PIN) == LED_OFF){
-	//			Set_LED(BUTTON_2_R_REG, BUTTON_2_R_PIN, 1);
+	//			Set_LED_Setting(BUTTON_2_R_REG, BUTTON_2_R_PIN, 1);
 	//			start_DMA = 1;
 	//		}
 	//	}
 	//	else{
 	//		if(LED_State(BUTTON_2_R_REG, BUTTON_2_R_PIN) == LED_ON){
-	//			Set_LED(BUTTON_2_R_REG, BUTTON_2_R_PIN, 0);
+	//			Set_LED_Setting(BUTTON_2_R_REG, BUTTON_2_R_PIN, 0);
 	//		}
 	//	}
 	//
 	//	if(HAL_GPIO_ReadPin(BUTTON_3_GPIO_Port, BUTTON_3_Pin) == GPIO_PIN_SET){
 	//		if(LED_State(BUTTON_3_R_REG, BUTTON_3_R_PIN) == LED_OFF){
-	//			Set_LED(BUTTON_3_R_REG, BUTTON_3_R_PIN, 1);
+	//			Set_LED_Setting(BUTTON_3_R_REG, BUTTON_3_R_PIN, 1);
 	//			start_DMA = 1;
 	//		}
 	//	}
 	//	else{
 	//		if(LED_State(BUTTON_3_R_REG, BUTTON_3_R_PIN) == LED_ON){
-	//			Set_LED(BUTTON_3_R_REG, BUTTON_3_R_PIN, 0);
+	//			Set_LED_Setting(BUTTON_3_R_REG, BUTTON_3_R_PIN, 0);
 	//		}
 	//	}
 
@@ -175,13 +172,13 @@ void ResistiveTouchSampler(void){
 				button_4_timeout = HAL_GetTick();
 
 				if(LED_State(BUTTON_4_G_REG, BUTTON_4_G_PIN) == LED_OFF){
-						Set_LED(BUTTON_4_G_REG, BUTTON_4_G_PIN, 1);
-						//activateFilter(1);
+						Set_LED_Setting(BUTTON_4_G_REG, BUTTON_4_G_PIN, 1);
+						activateLowpassFilter(1);
 				}
 
 				else if(LED_State(BUTTON_4_G_REG, BUTTON_4_G_PIN) == LED_ON){
-						Set_LED(BUTTON_4_G_REG, BUTTON_4_G_PIN, 0);
-						//activateFilter(0);
+						Set_LED_Setting(BUTTON_4_G_REG, BUTTON_4_G_PIN, 0);
+						activateLowpassFilter(0);
 				}
 			}
 		}
@@ -196,14 +193,14 @@ void ResistiveTouchSampler(void){
 
 				if(LED_State(BUTTON_5_G_REG, BUTTON_5_G_PIN) == LED_OFF){
 
-					Set_LED(BUTTON_5_G_REG, BUTTON_5_G_PIN, 1);
-					Set_LED(BUTTON_6_G_REG, BUTTON_6_G_PIN, 0);
+					Set_LED_Setting(BUTTON_5_G_REG, BUTTON_5_G_PIN, 1);
+					Set_LED_Setting(BUTTON_6_G_REG, BUTTON_6_G_PIN, 0);
 				}
 			}
 		}
 	//	else{
 	//		if(LED_State(BUTTON_5_G_REG, BUTTON_5_G_PIN) == LED_ON){
-	//			Set_LED(BUTTON_5_G_REG, BUTTON_5_G_PIN, 0);
+	//			Set_LED_Setting(BUTTON_5_G_REG, BUTTON_5_G_PIN, 0);
 	//		}
 	//	}
 
@@ -211,38 +208,38 @@ void ResistiveTouchSampler(void){
 			if(LED_State(BUTTON_6_G_REG, BUTTON_6_G_PIN) == LED_OFF){
 				if ( (HAL_GetTick() - button_6_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
 					button_6_timeout = HAL_GetTick();
-					Set_LED(BUTTON_6_G_REG, BUTTON_6_G_PIN, 1);
-					Set_LED(BUTTON_5_G_REG, BUTTON_5_G_PIN, 0);
+					Set_LED_Setting(BUTTON_6_G_REG, BUTTON_6_G_PIN, 1);
+					Set_LED_Setting(BUTTON_5_G_REG, BUTTON_5_G_PIN, 0);
 				}
 			}
 		}
 	//	else{
 	//		if(LED_State(BUTTON_6_G_REG, BUTTON_6_G_PIN) == LED_ON){
-	//			Set_LED(BUTTON_6_G_REG, BUTTON_6_G_PIN, 0);
+	//			Set_LED_Setting(BUTTON_6_G_REG, BUTTON_6_G_PIN, 0);
 	//		}
 	//	}
 	//
 	//	if(HAL_GPIO_ReadPin(BUTTON_7_GPIO_Port, BUTTON_7_Pin) == GPIO_PIN_SET){
 	//		if(LED_State(BUTTON_7_R_REG, BUTTON_7_R_PIN) == LED_OFF){
-	//			Set_LED(BUTTON_7_R_REG, BUTTON_7_R_PIN, 1);
+	//			Set_LED_Setting(BUTTON_7_R_REG, BUTTON_7_R_PIN, 1);
 	//			start_DMA = 1;
 	//		}
 	//	}
 	//	else{
 	//		if(LED_State(BUTTON_7_R_REG, BUTTON_7_R_PIN) == LED_ON){
-	//			Set_LED(BUTTON_7_R_REG, BUTTON_7_R_PIN, 0);
+	//			Set_LED_Setting(BUTTON_7_R_REG, BUTTON_7_R_PIN, 0);
 	//		}
 	//	}
 	//
 	//	if(HAL_GPIO_ReadPin(BUTTON_8_GPIO_Port, BUTTON_8_Pin) == GPIO_PIN_SET){
 	//		if(LED_State(BUTTON_8_R_REG, BUTTON_8_R_PIN) == LED_OFF){
-	//			Set_LED(BUTTON_8_R_REG, BUTTON_8_R_PIN, 1);
+	//			Set_LED_Setting(BUTTON_8_R_REG, BUTTON_8_R_PIN, 1);
 	//			start_DMA = 1;
 	//		}
 	//	}
 	//	else{
 	//		if(LED_State(BUTTON_8_R_REG, BUTTON_8_R_PIN) == LED_ON){
-	//			Set_LED(BUTTON_8_R_REG, BUTTON_8_R_PIN, 0);
+	//			Set_LED_Setting(BUTTON_8_R_REG, BUTTON_8_R_PIN, 0);
 	//		}
 	//	}
 
@@ -253,23 +250,23 @@ void ResistiveTouchSampler(void){
 		    button_7_state++;
 
 		    if(button_7_state == 1){
-		      Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 1);
+		      Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 1);
 		      setPreWave(1);
 
 		    }
 		    else if(button_7_state == 2){
-		      Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 1);
-		      Set_LED(BUTTON_7_R_REG, BUTTON_7_R_PIN, 1);
+		      Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 1);
+		      Set_LED_Setting(BUTTON_7_R_REG, BUTTON_7_R_PIN, 1);
 		      setPreWave(2);
 		    }
 		    else if(button_7_state == 3){
-		      Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
-		      Set_LED(BUTTON_7_R_REG, BUTTON_7_R_PIN, 1);
+		      Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
+		      Set_LED_Setting(BUTTON_7_R_REG, BUTTON_7_R_PIN, 1);
 		      setPreWave(3);
 		    }
 		    else if(button_7_state == 4){
-		      Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
-		      Set_LED(BUTTON_7_R_REG, BUTTON_7_R_PIN, 0);
+		      Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
+		      Set_LED_Setting(BUTTON_7_R_REG, BUTTON_7_R_PIN, 0);
 		      setPreWave(0);
 		      button_7_state = 0;
 		    }
@@ -284,23 +281,23 @@ void ResistiveTouchSampler(void){
 		    button_8_state++;
 
 		    if(button_8_state == 1){
-		      Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 1);
+		      Set_LED_Setting(BUTTON_8_G_REG, BUTTON_8_G_PIN, 1);
 		      setPostWave(1);
 
 		    }
 		    else if(button_8_state == 2){
-		      Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 1);
-		      Set_LED(BUTTON_8_R_REG, BUTTON_8_R_PIN, 1);
+		      Set_LED_Setting(BUTTON_8_G_REG, BUTTON_8_G_PIN, 1);
+		      Set_LED_Setting(BUTTON_8_R_REG, BUTTON_8_R_PIN, 1);
 		      setPostWave(2);
 		    }
 		    else if(button_8_state == 3){
-		      Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
-		      Set_LED(BUTTON_8_R_REG, BUTTON_8_R_PIN, 1);
+		      Set_LED_Setting(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
+		      Set_LED_Setting(BUTTON_8_R_REG, BUTTON_8_R_PIN, 1);
 		      setPostWave(3);
 		    }
 		    else if(button_8_state == 4){
-		      Set_LED(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
-		      Set_LED(BUTTON_8_R_REG, BUTTON_8_R_PIN, 0);
+		      Set_LED_Setting(BUTTON_8_G_REG, BUTTON_8_G_PIN, 0);
+		      Set_LED_Setting(BUTTON_8_R_REG, BUTTON_8_R_PIN, 0);
 		      setPostWave(0);
 		      button_8_state = 0;
 		    }
@@ -313,15 +310,15 @@ void ResistiveTouchSampler(void){
 //			if ( (HAL_GetTick() - button_9_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
 //				button_9_timeout = HAL_GetTick();
 //				if(LED_State(BUTTON_9_G_REG, BUTTON_9_G_PIN) == LED_OFF){
-//					Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 1);
+//					Set_LED_Setting(BUTTON_9_G_REG, BUTTON_9_G_PIN, 1);
 //					activateFilter(1);
 //					trigger_table = 1;
 //					first_pass = 1;
 //				}
 //				else{
-//					Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 0);
-//					Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
-//					Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 0);
+//					Set_LED_Setting(BUTTON_9_G_REG, BUTTON_9_G_PIN, 0);
+//					Set_LED_Setting(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
+//					Set_LED_Setting(BUTTON_10_R_REG, BUTTON_10_R_PIN, 0);
 //					trigger_table = 0;
 //					activateFilter(0);
 //				}
@@ -336,14 +333,14 @@ void ResistiveTouchSampler(void){
 //					button_10_timeout = HAL_GetTick();
 //
 //					if(LED_State(BUTTON_10_G_REG, BUTTON_10_G_PIN) == LED_OFF){
-//						Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 0);
-//						Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 1);
+//						Set_LED_Setting(BUTTON_10_R_REG, BUTTON_10_R_PIN, 0);
+//						Set_LED_Setting(BUTTON_10_G_REG, BUTTON_10_G_PIN, 1);
 //						incrementTable();
 //					}
 //
 //					else if(LED_State(BUTTON_10_R_REG, BUTTON_10_R_PIN) == LED_OFF){
-//						Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 1);
-//						Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
+//						Set_LED_Setting(BUTTON_10_R_REG, BUTTON_10_R_PIN, 1);
+//						Set_LED_Setting(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
 //						incrementTable();
 //					}
 //				}
@@ -358,28 +355,28 @@ void ResistiveTouchSampler(void){
 		    bit_crush++;
 
 		    if(button_9_state == 1){
-		      Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 1);
+		      Set_LED_Setting(BUTTON_9_G_REG, BUTTON_9_G_PIN, 1);
 		      bit_crush = 4;
 		    }
 		    else if(button_9_state == 2){
-		      Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 1);
-		      Set_LED(BUTTON_9_R_REG, BUTTON_9_R_PIN, 1);
+		      Set_LED_Setting(BUTTON_9_G_REG, BUTTON_9_G_PIN, 1);
+		      Set_LED_Setting(BUTTON_9_R_REG, BUTTON_9_R_PIN, 1);
 		      bit_crush = 6;
 		    }
 		    else if(button_9_state == 3){
-		      Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 0);
-		      Set_LED(BUTTON_9_R_REG, BUTTON_9_R_PIN, 1);
+		      Set_LED_Setting(BUTTON_9_G_REG, BUTTON_9_G_PIN, 0);
+		      Set_LED_Setting(BUTTON_9_R_REG, BUTTON_9_R_PIN, 1);
 		      bit_crush = 8;
 		    }
 		    else{
-		      Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 0);
-		      Set_LED(BUTTON_9_R_REG, BUTTON_9_R_PIN, 0);
+		      Set_LED_Setting(BUTTON_9_G_REG, BUTTON_9_G_PIN, 0);
+		      Set_LED_Setting(BUTTON_9_R_REG, BUTTON_9_R_PIN, 0);
 		      bit_crush = 0;
 		      button_9_state = 0;
 		    }
 //		    else if(bit_crush == 5){
-//		      Set_LED(BUTTON_9_G_REG, BUTTON_9_G_PIN, 0);
-//		      Set_LED(BUTTON_9_R_REG, BUTTON_9_R_PIN, 0);
+//		      Set_LED_Setting(BUTTON_9_G_REG, BUTTON_9_G_PIN, 0);
+//		      Set_LED_Setting(BUTTON_9_R_REG, BUTTON_9_R_PIN, 0);
 //		      changeQ(0.8);
 //		      bit_crush = 0;
 //		    }
@@ -394,23 +391,23 @@ void ResistiveTouchSampler(void){
 		    button_10_state++;
 
 		    if(button_10_state == 1){
-		      Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 1);
+		      Set_LED_Setting(BUTTON_10_G_REG, BUTTON_10_G_PIN, 1);
 		      changeQ(1);
 
 		    }
 		    else if(button_10_state == 2){
-		      Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 1);
-		      Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 1);
+		      Set_LED_Setting(BUTTON_10_G_REG, BUTTON_10_G_PIN, 1);
+		      Set_LED_Setting(BUTTON_10_R_REG, BUTTON_10_R_PIN, 1);
 		      changeQ(1.5);
 		    }
 		    else if(button_10_state == 3){
-		      Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
-		      Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 1);
+		      Set_LED_Setting(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
+		      Set_LED_Setting(BUTTON_10_R_REG, BUTTON_10_R_PIN, 1);
 		      changeQ(2);
 		    }
 		    else if(button_10_state == 4){
-		      Set_LED(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
-		      Set_LED(BUTTON_10_R_REG, BUTTON_10_R_PIN, 0);
+		      Set_LED_Setting(BUTTON_10_G_REG, BUTTON_10_G_PIN, 0);
+		      Set_LED_Setting(BUTTON_10_R_REG, BUTTON_10_R_PIN, 0);
 		      changeQ(3);
 		      button_10_state = 0;
 		    }
@@ -431,7 +428,8 @@ void ResistiveTouchSampler(void){
 	//	{
 	//		HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_2);
 	//	}
-
+		//osDelay(2);
+		transmitToBuffer();
 		buttonStateMachine();
 	}
 }
@@ -451,10 +449,10 @@ void buttonStateMachine(void){
 
 	}
 
-	if(LED_State(BUTTON_5_G_REG, BUTTON_5_G_PIN)){
+	if(LED_State(BUTTON_5_G_REG, BUTTON_5_G_PIN) == LED_ON){
 		turnOnLidarSounds();
 	}
-	else if(LED_State(BUTTON_6_G_REG, BUTTON_6_G_PIN)){
+	else if(LED_State(BUTTON_6_G_REG, BUTTON_6_G_PIN) == LED_ON){
 		turnOnCapSounds();
 	}else{
 		turnOffSounds();

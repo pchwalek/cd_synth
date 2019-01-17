@@ -3,6 +3,9 @@
 #include "filter_coef.h"
 #include "stdlib.h"
 
+#define APPLY_SOFT_CLIPPING 1
+#define CENTER_AMPLITUDE    1024
+#define MAX_FREQ	    2048
 
 //#define SCALE_INPUT		22.918312
 #define SCALE_INPUT		57.6140893992662
@@ -43,6 +46,8 @@ float current_cutoff = 16000;
 float cos_omega = 0;
 float sin_omega = 0;
 
+double new_cutoff = 16000;
+
 
 //q15_t coef_1000[6*NUM_STAGES] = {0.005709266664235, 0, 0.011418533328471, 0.005709266664235, 1.832076711084677, -0.854913777741618};
 //q15_t coef_1000[6*NUM_STAGES] = {32767, 0, 0, 0, 0, 0};
@@ -59,15 +64,6 @@ void initFilter(void){
 
 }
 
-void resetFilter(void){
-  uint16_t x_2 = 0;
-  uint16_t x_1 = 0;
-  uint16_t y_2 = 0;
-  uint16_t y_1 = 0;
-}
-
-
-
 // ref: http://shepazu.github.io/Audio-EQ-Cookbook/audio-eq-cookbook.html
 void adjustFilterCutoff(float desired_cutoff){
   if(desired_cutoff > MAX_CUTOFF_FREQ){
@@ -78,7 +74,9 @@ void adjustFilterCutoff(float desired_cutoff){
         return;
     }
 
-  current_cutoff = desired_cutoff;
+  if(desired_cutoff >= 0){
+      current_cutoff = desired_cutoff;
+  }
 
   // calculate omega_not
   omega = 2 * PI * current_cutoff / ((float) SAMPLING_FREQ);
@@ -107,11 +105,28 @@ void applyCustomFilter(q15_t* input_buffer, q15_t* output_buffer, uint16_t size)
 		      + b_2 * x_2
 		      - a_1 * y_1
 		      - a_2 * y_2;
+
+      //ref: https://www.hackaudio.com/digital-signal-processing/distortion-effects/soft-clipping/
+#ifdef APPLY_SOFT_CLIPPING
+      //output_buffer[i] = 2048 * (1/1+exp((1000-output_buffer[i])/1024));
+      //output_buffer[i] = 1024 * tanh( (output_buffer[i]/1024.0) - 1 ) + 1024;
+      //output_buffer[i] = output_buffer[i] - (1/3) * (output_buffer[i]*output_buffer[i]*output_buffer[i]);
+      //output_buffer[i] = 1024.0*(2.0/PI)*atan((output_buffer[i]-1024.0)/700.0) + 1024.0;
+
+#endif
+
       x_2 = x_1;
       x_1 = input_buffer[i];
       y_2 = y_1;
       y_1 = output_buffer[i];
   }
+}
+
+void resetFilterHistory(void){
+  x_2 = 0;
+  x_1 = 0;
+  y_2 = 0;
+  y_1 = 0;
 }
 
 // inputVal should lie somewhere between 0 and pi/2, inclusively
@@ -136,7 +151,7 @@ void setCutoffFreq(float inputAngle){
 //	changedCutoff = 1;
 //	arm_biquad_cascade_df1_init_q15(&filter_instance, NUM_STAGES, coef[inputVal], filter_state, bit_shift[inputVal]);
 
-	double new_cutoff = angleToCutoffFreq(inputAngle);
+	new_cutoff = angleToCutoffFreq(inputAngle);
 	adjustFilterCutoff(new_cutoff);
 }
 
@@ -146,6 +161,7 @@ double angleToCutoffFreq(float inputAngle){
 
 void changeQ(double new_Q){
   Q = new_Q;
+  adjustFilterCutoff(-1);
 }
 
 void applyFilter(volatile q15_t* input, volatile q15_t* output, volatile q15_t* prev_buffer){
