@@ -4,6 +4,8 @@
 #include "stdint.h"
 #include "cmsis_os.h"
 
+//#define DEBUG_PRINT		1
+
 
 #define CAP_1_LED_PIN		0x20
 #define CAP_1_LED_PORT		3
@@ -104,9 +106,11 @@
 #define HALF_LENGTH		16
 
 osMutexId  (LED_mutex_id); // Mutex ID
+osSemaphoreId transmitLED_bufferSemaphoreHandle;
 
 volatile uint8_t LED_SETTINGS[6];
 
+void bufferTransmitThread(void);
 void runPOV_step(uint8_t* red, uint8_t* green, uint8_t step);
 void POV_Update(void);
 void POV_handler(uint64_t RPR);

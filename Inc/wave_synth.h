@@ -8,6 +8,7 @@
 #define BUFFER_SIZE 512
 
 osSemaphoreId DAC_SemaphoreHandle;
+osSemaphoreId bufferFillSemaphoreHandle;
 osThreadId DAC_BufferRefreshHandle;
 
 void setWavetableAmplitude(uint8_t* intTracker);
@@ -19,12 +20,12 @@ void switchOctave(uint8_t des_octave);
 void playSample(void);
 void clearBuffer(q15_t* buffer);
 void fillBuffer(q15_t* buffer);
-void prepBuffer(DAC_HandleTypeDef* hdac);
+void prepBuffer(void);
 void switchTable(const uint16_t* desired_table, int16_t size);
 void reset_index(float* freq_ind);
 void addTableToBuffer(q15_t* buffer, float* freq_inc, float* freq_ind);
 uint16_t incrementIndex(float* freq_inc, float* freq_ind);
-void passBufferToDAC(q15_t* buffer, DAC_HandleTypeDef* hdac);
+void passBufferToDAC(q15_t* buffer);
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac);
 void calcLidarFreq(int16_t* measurement);
 void calcFilterFreqAcc(float x_g, float y_g, float z_g);

@@ -85,7 +85,9 @@
 //osTimerId capSampleTimerHandle;
 osThreadId capSampleHandle;
 osThreadId lidarMeasurementHandle;
+osThreadId bufferFillHandle;
 osThreadId accSampleHandle;
+osThreadId ledTransmitHandle;
 
 /* USER CODE END Variables */
 osThreadId defaultTaskHandle;
@@ -161,16 +163,31 @@ void StartDefaultTask(void const * argument)
   osMutexWait(I2C3_mutex_id, 5);
 
   osSemaphoreDef(capSampleSemaphore);
-  capSampleSemaphoreHandle = osSemaphoreCreate (osSemaphore(capSampleSemaphore), 1);
+  capSampleSemaphoreHandle = osSemaphoreCreate (osSemaphore(capSampleSemaphore), 4);
+  osSemaphoreWait( capSampleSemaphoreHandle, 1);
+  osSemaphoreWait( capSampleSemaphoreHandle, 1);
+  osSemaphoreWait( capSampleSemaphoreHandle, 1);
   osSemaphoreWait( capSampleSemaphoreHandle, 1);
 
   osSemaphoreDef(lidarSampleReadySemaphore);
-  lidarSampleReadySemaphoreHandle = osSemaphoreCreate (osSemaphore(lidarSampleReadySemaphore), 1);
+  lidarSampleReadySemaphoreHandle = osSemaphoreCreate (osSemaphore(lidarSampleReadySemaphore), 3);
+  osSemaphoreWait( lidarSampleReadySemaphoreHandle, 1);
+  osSemaphoreWait( lidarSampleReadySemaphoreHandle, 1);
   osSemaphoreWait( lidarSampleReadySemaphoreHandle, 1);
 
+
   osSemaphoreDef(accSampleSemaphore);
-  accSampleSemaphoreHandle = osSemaphoreCreate (osSemaphore(accSampleSemaphore), 1);
+  accSampleSemaphoreHandle = osSemaphoreCreate (osSemaphore(accSampleSemaphore), 2);
   osSemaphoreWait( accSampleSemaphoreHandle, 1);
+  osSemaphoreWait( accSampleSemaphoreHandle, 1);
+
+  osSemaphoreDef(transmitLED_bufferSemaphore);
+  transmitLED_bufferSemaphoreHandle = osSemaphoreCreate (osSemaphore(transmitLED_bufferSemaphore), 5);
+  osSemaphoreWait( transmitLED_bufferSemaphoreHandle, 1);
+  osSemaphoreWait( transmitLED_bufferSemaphoreHandle, 1);
+  osSemaphoreWait( transmitLED_bufferSemaphoreHandle, 1);
+  osSemaphoreWait( transmitLED_bufferSemaphoreHandle, 1);
+  osSemaphoreWait( transmitLED_bufferSemaphoreHandle, 1);
 
   osTimerDef(accSampleTimer, accGiveSemaphore);
   accSampleTimerHandle = osTimerCreate(osTimer(accSampleTimer), osTimerPeriodic, (void *)0);
@@ -178,10 +195,29 @@ void StartDefaultTask(void const * argument)
   osTimerDef(povExitTimer, enable_buttons);
   povExitTimerHandle = osTimerCreate(osTimer(povExitTimer), osTimerOnce, (void *)0);
 
+  osTimerDef(capSampleTimer, capGiveSemaphore);
+  capSampleTimerHandle = osTimerCreate(osTimer(capSampleTimer), osTimerPeriodic, (void *)0);
+
+  osTimerDef(resSampleTimer, ResistiveTouchSampler);
+  resSampleTimerHandle = osTimerCreate(osTimer(resSampleTimer), osTimerPeriodic, (void *)0);
+  osTimerStart(resSampleTimerHandle,100);
+
+  osSemaphoreDef(bufferFillSemaphore);
+  bufferFillSemaphoreHandle = osSemaphoreCreate (osSemaphore(bufferFillSemaphore), 4);
+  osSemaphoreWait( bufferFillSemaphoreHandle, 1);
+  osSemaphoreWait( bufferFillSemaphoreHandle, 1);
+  osSemaphoreWait( bufferFillSemaphoreHandle, 1);
+
+  osThreadDef(ledTransmitTask, bufferTransmitThread, osPriorityNormal, 0, 256);
+  ledTransmitHandle = osThreadCreate(osThread(ledTransmitTask), NULL);
+
+  osThreadDef(bufferFillTask, prepBuffer, osPriorityNormal, 0, 1024);
+  bufferFillHandle = osThreadCreate(osThread(bufferFillTask), NULL);
+
   osThreadDef(lidarMeasurementTask, LidarMeasurement, osPriorityLow, 0, 256);
   lidarMeasurementHandle = osThreadCreate(osThread(lidarMeasurementTask), NULL);
 
-  osThreadDef(capSampleTask, Sample_Cap_Touch, osPriorityNormal, 0, 256);
+  osThreadDef(capSampleTask, Sample_Cap_Touch, osPriorityLow, 0, 256);
   capSampleHandle = osThreadCreate(osThread(capSampleTask), NULL);
 
   osThreadDef(accSampleTask, accelerometerThread, osPriorityLow, 0, 256);

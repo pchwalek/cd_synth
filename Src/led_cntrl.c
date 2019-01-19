@@ -580,25 +580,51 @@ void updatePOV_LidarMatricies(uint32_t lidarPOV_Map) {
 }
 
 void transmitToBuffer(void) {
-  // taskENTER_CRITICAL();
-  if (LED_mutex_id != NULL) {
-    osMutexWait(LED_mutex_id, osWaitForever);
-  }
 
-  HAL_GPIO_WritePin(LED_SS_GPIO_Port, LED_SS_Pin, GPIO_PIN_RESET);
-
-  HAL_SPI_Transmit_IT(&hspi2, LED_SETTINGS, 6);
-
-  // HAL_Delay(1);
-  // HAL_GPIO_WritePin(LED_SS_GPIO_Port, LED_SS_Pin, GPIO_PIN_SET);
-
-  if (LED_mutex_id != NULL) {
-    osMutexRelease(LED_mutex_id);
-  }
+  osSemaphoreRelease (transmitLED_bufferSemaphoreHandle);
 
   // HAL_GPIO_WritePin(LED_SS_GPIO_Port, LED_SS_Pin, GPIO_PIN_SET);
   // taskEXIT_CRITICAL();
   // HAL_GPIO_WritePin(LED_SS_GPIO_Port, LED_SS_Pin, GPIO_PIN_SET);
+}
+
+void bufferTransmitThread(void){
+  // turn off all LEDs (ensures no weird states on startup)
+  Flush_LEDS();
+
+  while(1){
+      osSemaphoreWait (transmitLED_bufferSemaphoreHandle, 500);
+
+////      // taskENTER_CRITICAL();
+//      if (LED_mutex_id != NULL) {
+//    #ifdef DEBUG_PRINT
+//      HAL_UART_Transmit(&huart3, "mutex wait\n\r", sizeof("mutex wait\n\r"), 100);
+//    #endif
+//        osMutexWait(LED_mutex_id, 100);
+//    #ifdef DEBUG_PRINT
+//      HAL_UART_Transmit(&huart3, "mutex get\n\r", sizeof("mutex get\n\r"), 100);
+//    #endif
+//      }
+
+      HAL_GPIO_WritePin(LED_SS_GPIO_Port, LED_SS_Pin, GPIO_PIN_RESET);
+//    #ifdef DEBUG_PRINT
+//      HAL_UART_Transmit(&huart3, "pre transmit\n\r", sizeof("pre transmit\n\r"), 100);
+//    #endif
+      HAL_SPI_Transmit(&hspi2, LED_SETTINGS, 6, 1);
+//    #ifdef DEBUG_PRINT
+//      HAL_UART_Transmit(&huart3, "post transmit\n\r", sizeof("post transmit\n\r"), 100);
+//    #endif
+       //osDelay(1);
+       HAL_GPIO_WritePin(LED_SS_GPIO_Port, LED_SS_Pin, GPIO_PIN_SET);
+
+//      if (LED_mutex_id != NULL) {
+//    #ifdef DEBUG_PRINT
+//      HAL_UART_Transmit(&huart3, "mutex give\n\r", sizeof("mutex give\n\r"), 100);
+//    #endif
+//        osMutexRelease(LED_mutex_id);
+//      }
+  }
+
 }
 
 void cyclePOV_LEDs(uint16_t rate) {
@@ -711,7 +737,9 @@ void POV_LEDs(uint16_t led_map) {
   } else {
     LED_SETTINGS[POV_8_G_REG] |= POV_8_G_PIN;
   }
-
+#ifdef DEBUG_PRINT
+  HAL_UART_Transmit(&huart3, "transmit LED\n\r", sizeof("transmit LED\n\r"), 100);
+#endif
   transmitToBuffer();
 }
 

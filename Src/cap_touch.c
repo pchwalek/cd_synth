@@ -3,6 +3,8 @@
 #include "I2C.h"
 #include "wave_synth.h"
 #include "res_touch.h"
+
+#include "usart.h"
 //#include "freertos.c"
 //#include "stm32l4xx_hal_dac.h"
 
@@ -10,45 +12,55 @@
 
 
 /**************** variables ***************************/
-uint8_t cap_read[2];
+volatile uint8_t cap_read[2];
 int8_t* new_temp;
 uint8_t temp[14];
 
 uint8_t leftTouchDebounce = 0;
 uint8_t rightTouchDebounce = 0;
 
+uint8_t packet;
+const uint8_t packet_null = 0x00;
+
 /**************** functions ***************************/
 void Setup_Cap_Touch(void){
-	uint8_t packet;
+
 
 	// ungroup all CAP sensors to work individually
 	packet = 0x02;
-	HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, CNFG_REG_4, 1, &packet, 1, 1);
+	HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, CNFG_REG_4, 1, &packet, 1, 100);
 
 	// device will not block multiple touches
 	packet = 0x04;
-	HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, MULT_TOUCH_REG, 1, &packet, 1, 1);
+	HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, MULT_TOUCH_REG, 1, &packet, 1, 100);
 
 	// disable auto-calibration
-//	packet = 0x00;
-//	HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, CALIBRATION_REG, 1, &packet, 1, 1);
+	packet = 0x00;
+	HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, CALIBRATION_REG, 1, &packet, 1, 100);
 
 	// sensitivity control
-	packet = 0x7F;
-	HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, DATA_SENS_REG, 1, &packet, 1, 1);
+	packet = 0x7F & 0xFF;
+	HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, DATA_SENS_REG, 1, &packet, 1, 100);
 
 	// setting button 1 threshold sets all
-	packet = 0x93 | 0x40;
-	HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, RECAL_REG, 1, &packet, 1, 1);
+//	packet = 0x93 | 0x40;
+//	HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, RECAL_REG, 1, &packet, 1, 100);
 
 	packet = 0x00;
-    HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, MAIN_STATUS, 1, &packet, 1, 1);
+    HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, MAIN_STATUS, 1, &packet, 1, 100);
 
-    packet = 0xFF;
-    HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, 0x4E, 1, &packet, 1, 1);
+//	packet = 0x04 | 0x01;
+//HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, 0x20, 1, &packet, 1, 100);
 
-    packet = 0x03;
-    HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, 0x4E, 1, &packet, 1, 1);
+//    packet = 0xFF;
+//    HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, 0x4E, 1, &packet, 1, 100);
+
+//    packet = 0xFF;
+//        HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, 0x28, 1, &packet, 1, 100);
+
+//    packet = 0x03;
+//    HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, 0x4E, 1, &packet, 1, 100);
+
 	// disable auto-calibration
 //	while(1){
 //		packet = 0x00;
@@ -63,7 +75,7 @@ void Setup_Cap_Touch(void){
 void Read_Cap_Touch(void){
 	//uint8_t packet;
 
-	HAL_I2C_Mem_Read(&hi2c1, CAP1214_ADDR<<1, 0x03, 1, cap_read, 2, 2);
+	HAL_I2C_Mem_Read_IT(&hi2c1, CAP1214_ADDR<<1, 0x03, 1, cap_read, 2);
 
 
 //	HAL_I2C_Mem_Read(&hi2c1, CAP1214_ADDR<<1, 0x51, 1, temp, 1, 1);
@@ -73,11 +85,14 @@ void Read_Cap_Touch(void){
 	//Reset_Cap_INT();
 }
 
+
 void Reset_Cap_INT(void){
-	uint8_t packet = 0x00;
-	HAL_I2C_Mem_Write(&hi2c1, CAP1214_ADDR<<1, 0x00, 1, &packet, 1, 1);
+	HAL_I2C_Mem_Write_IT(&hi2c1, CAP1214_ADDR<<1, 0x00, 1, &packet_null, 1);
 }
 
+void capGiveSemaphore(void){
+  osSemaphoreRelease (capSampleSemaphoreHandle);
+}
 
 //// reads cap touch sense binary values from CAP1214 IC and
 ////    turns on corresponding LEDs
@@ -90,12 +105,23 @@ void Sample_Cap_Touch(void){
   switchOctave(4);
 
   while(1){
+#ifdef DEBUG_PRINT
+  HAL_UART_Transmit(&huart3, "i2c int\n\r", sizeof("i2c int passed\n\r"), 100);
+#endif
     Reset_Cap_INT();
-
+#ifdef DEBUG_PRINT
+  HAL_UART_Transmit(&huart3, " passed\n\r", sizeof(" passed\n\r"), 100);
+#endif
     osSemaphoreWait (capSampleSemaphoreHandle, osWaitForever);
-
-    taskENTER_CRITICAL();
+#ifdef DEBUG_PRINT
+  HAL_UART_Transmit(&huart3, "start_cap\n\r", sizeof("start_cap\n\r"), 100);
+#endif
+    //taskENTER_CRITICAL();
     Read_Cap_Touch();
+    osDelay(2);
+#ifdef DEBUG_PRINT
+  HAL_UART_Transmit(&huart3, "i2c sample passed\n\r", sizeof("i2c sample passed\n\r"), 100);
+#endif
 
     if(isButtonEnabled() == 1){
 //      if( (cap_read[KEY_1_PORT] & KEY_1_PIN) == KEY_1_PIN){
@@ -315,7 +341,7 @@ void Sample_Cap_Touch(void){
       }
 
       transmitToBuffer();
-      taskEXIT_CRITICAL();
+      //taskEXIT_CRITICAL();
 
       if( (cap_read[LEFT_BUTTON_PORT] & LEFT_BUTTON_PIN) == LEFT_BUTTON_PIN){
 	      if(leftTouchDebounce == 0){
@@ -341,6 +367,8 @@ void Sample_Cap_Touch(void){
 	      }
       }
     }
-
+#ifdef DEBUG_PRINT
+  HAL_UART_Transmit(&huart3, "stop_cap\n\r", sizeof("stop_cap\n\r"), 100);
+#endif
   }
 }

@@ -57,7 +57,9 @@
 #define MAIN_STATUS			0x00
 
 osSemaphoreId capSampleSemaphoreHandle;
+osTimerId capSampleTimerHandle;
 
+void capGiveSemaphore(void);
 void Setup_Cap_Touch(void);
 void Read_Cap_Touch(void);
 void Sample_Cap_Touch(void);

@@ -3,7 +3,7 @@
 #include "filter_coef.h"
 #include "stdlib.h"
 
-#define APPLY_SOFT_CLIPPING 1
+//#define APPLY_SOFT_CLIPPING 1
 #define CENTER_AMPLITUDE    1024
 #define MAX_FREQ	    2048
 
@@ -16,7 +16,7 @@
 #define MAX_CUTOFF_FREQ	16000
 #define SAMPLING_FREQ	40000
 
-volatile uint8_t pastVal = -1;
+volatile float pastVal = -1;
 volatile uint8_t inputVal = 0;
 volatile uint8_t changedCutoff = 0;
 
@@ -31,12 +31,12 @@ uint16_t x_1 = 0;
 uint16_t y_2 = 0;
 uint16_t y_1 = 0;
 
-double b_0 = 0;
-double b_1 = 0;
-double b_2 = 0;
-double a_0 = 0;
-double a_1 = 0;
-double a_2 = 0;
+float b_0 = 0;
+float b_1 = 0;
+float b_2 = 0;
+float a_0 = 0;
+float a_1 = 0;
+float a_2 = 0;
 
 double omega = 0;
 double alpha = 0;
@@ -98,7 +98,13 @@ void adjustFilterCutoff(float desired_cutoff){
   a_2 = (1.0 - alpha) / a_0;
 }
 
+uint32_t startT;
+uint32_t totalT;
+q15_t temp_buffer[512];
+q15_t tempVal;
+
 void applyCustomFilter(q15_t* input_buffer, q15_t* output_buffer, uint16_t size){
+//  startT = DWT->CYCCNT;
   for(uint16_t i = 0; i < size; i++){
       output_buffer[i] = b_0 * input_buffer[i]
 		      + b_1 * x_1
@@ -106,12 +112,18 @@ void applyCustomFilter(q15_t* input_buffer, q15_t* output_buffer, uint16_t size)
 		      - a_1 * y_1
 		      - a_2 * y_2;
 
+
+//      arm_float_to_q15(&b_0, &tempVal, 1);
+//
+//
+//      arm_scale_q15(input_buffer,tempVal,0,temp_buffer,512);
+
       //ref: https://www.hackaudio.com/digital-signal-processing/distortion-effects/soft-clipping/
 #ifdef APPLY_SOFT_CLIPPING
       //output_buffer[i] = 2048 * (1/1+exp((1000-output_buffer[i])/1024));
       //output_buffer[i] = 1024 * tanh( (output_buffer[i]/1024.0) - 1 ) + 1024;
       //output_buffer[i] = output_buffer[i] - (1/3) * (output_buffer[i]*output_buffer[i]*output_buffer[i]);
-      //output_buffer[i] = 1024.0*(2.0/PI)*atan((output_buffer[i]-1024.0)/700.0) + 1024.0;
+      output_buffer[i] = 1024.0*(2.0/PI)*atan((output_buffer[i]-1024.0)/700.0) + 1024.0;
 
 #endif
 
@@ -120,6 +132,8 @@ void applyCustomFilter(q15_t* input_buffer, q15_t* output_buffer, uint16_t size)
       y_2 = y_1;
       y_1 = output_buffer[i];
   }
+//  totalT = DWT->CYCCNT - startT;
+//  startT = DWT->CYCCNT - totalT;
 }
 
 void resetFilterHistory(void){

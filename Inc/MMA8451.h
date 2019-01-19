@@ -94,7 +94,7 @@ void calcAngularVelocity(void);
 void accGiveSemaphore(void);
 void MMA8451_read(uint8_t* sample);
 void accelerometerThread(void);
-void calculateAngle(float x_g, float y_g, float z_g);
+float calculateAngle(float x_g, float y_g, float z_g);
 
 volatile int16_t x, y, z;
 volatile float x_g, y_g, z_g;

@@ -6,6 +6,7 @@
 #include "wave_synth.h"
 #include "tim.h"
 #include "filter.h"
+#include "cap_touch.h"
 
 #define LED_ON		1
 #define LED_OFF		0
@@ -430,7 +431,12 @@ void ResistiveTouchSampler(void){
 	//	}
 		//osDelay(2);
 		transmitToBuffer();
+
+		    taskENTER_CRITICAL();
+
 		buttonStateMachine();
+		    taskEXIT_CRITICAL();
+
 	}
 }
 
@@ -451,11 +457,15 @@ void buttonStateMachine(void){
 
 	if(LED_State(BUTTON_5_G_REG, BUTTON_5_G_PIN) == LED_ON){
 		turnOnLidarSounds();
+		osTimerStop(capSampleTimerHandle);
 	}
 	else if(LED_State(BUTTON_6_G_REG, BUTTON_6_G_PIN) == LED_ON){
 		turnOnCapSounds();
+		osTimerStart(capSampleTimerHandle, 20);
+
 	}else{
 		turnOffSounds();
+		osTimerStop(capSampleTimerHandle);
 	}
 }
 
@@ -477,6 +487,7 @@ void disable_buttons(void){
 //		HAL_TIM_Base_Start_IT(&htim4);
 	    osTimerStop(povExitTimerHandle);
 	    osTimerStart(povExitTimerHandle, 400);
+
 	}
 }
 

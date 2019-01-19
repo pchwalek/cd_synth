@@ -56,6 +56,9 @@
 #define BUTTON_10_G_REG		2
 
 osTimerId povExitTimerHandle;
+osTimerId resSampleTimerHandle;
+
+
 
 void ResistiveTouchSampler(void);
 void buttonStateMachine(void);

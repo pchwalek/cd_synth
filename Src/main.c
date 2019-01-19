@@ -125,7 +125,7 @@ void MX_FREERTOS_Init(void);
   * @retval int
   */
 int main(void)
-{
+  {
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -179,7 +179,7 @@ int main(void)
   //  HAL_GPIO_TogglePin(LED_LAT_GPIO_Port, LED_LAT_Pin);
   activateLidar();
 
-  // short delay to give Lidar some time to initialize
+  // short delay to give Lidar and ACC some time to initialize
   HAL_Delay(100);
 
   // enable all shift registers
@@ -204,10 +204,9 @@ int main(void)
   //    HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_2, DAC_ALIGN_12B_R, 0x100);
 
   // prep an initial buffer for DAC
-  prepBuffer(&hdac1);
+  // prepBuffer();
 
-  // turn off all LEDs (ensures no weird states on startup)
-  Flush_LEDS();
+
 
 #ifdef BT_UART
   HAL_GPIO_WritePin(BT_CMD_GPIO_Port, BT_CMD_Pin, GPIO_PIN_SET);
@@ -459,9 +458,9 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 ////	  Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, LED_state%2);
 //	  //HALL_Handler();
 //  }
-  else{
-	  ResistiveTouchSampler();
-  }
+//  else{
+//	  ResistiveTouchSampler();
+//  }
   /* NOTE: This function should not be modified, when the callback is needed,
            the HAL_GPIO_EXTI_Callback could be implemented in the user file
    */
@@ -469,8 +468,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){
 	HAL_GPIO_WritePin(LED_SS_GPIO_Port, LED_SS_Pin, GPIO_PIN_SET);
-
+#ifdef DEBUG_PRINT
+      HAL_UART_Transmit(&huart3, "TX transmit\n\r", sizeof("TX transmit\n\r"), 100);
+    #endif
 	if (LED_mutex_id != NULL)  {
+
 		osMutexRelease(LED_mutex_id);
 	}
 }

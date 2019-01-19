@@ -12,6 +12,8 @@
 #include "arm_math.h"
 #include "res_touch.h"
 
+#include "usart.h"
+
 #include "stdlib.h"
 
 #define MAX_INDEX 255
@@ -69,7 +71,7 @@
 #define NOTE_A5S 932.328
 #define NOTE_B5 987.767
 
-#define ALPHA_DELTA_FREQ	0.005
+#define ALPHA_DELTA_FREQ	0.001
 
 #define UPPER_BOUND 	2048
 #define BUFFER_OFFSET 	1024
@@ -161,7 +163,7 @@ float temp2 = 0;
 
 uint32_t prevlidarSampleTime;
 uint32_t lidarSampleTime;
-float time_delta;
+//float time_delta;
 
 int16_t table_val;
 
@@ -192,109 +194,151 @@ uint8_t lowPassFilter_state = 0;
 
 // UBaseType_t  uxSavedInterruptStatus;
 
-void prepBuffer(DAC_HandleTypeDef* hdac) {
-  if (temp_2) {
-    temp_2 = 0;
-    switchTable(SinTable, sizeof(SinTable) >> 1);
-    clearBuffer(buffer_3);
-    setCutoffFreq(.9);
-  }
+uint32_t startTime;
+uint32_t totalTime;
 
-  // determine which buffer to fill
-  if (buff_toggle == 0) {
-    passBufferToDAC(filtered_buffer_3, hdac);
-
-    buff_toggle = 1;
-
-    clearBuffer(buffer_2);
-    // fill buffer depending on what button is being pressed
-    fillBuffer(buffer_2);
+void prepBuffer(void) {
 
 
-      // arm_float_to_q15(&temp_var, &temp_arm, 1);
-      //arm_shift_q15(buffer_2, BIT_SHIFT_Q_CONV, shifted_buffer_2, BUFFER_SIZE);
-      //applyFilter(shifted_buffer_2, filtered_buffer_2, shifted_buffer_3);
-      if(getBitCrush() > 0){
-	  applyBitCrush(buffer_2, BUFFER_SIZE);
-      }
 
-      if(lowPassFilter_state == 1){
-       applyCustomFilter(buffer_2, filtered_buffer_2, BUFFER_SIZE);
-      }
-      else{
-	  memcpy(filtered_buffer_2, buffer_2, sizeof(filtered_buffer_2) );
-      }
+  switchTable(SinTable, sizeof(SinTable) >> 1);
+  clearBuffer(buffer_3);
+  setCutoffFreq(.9);
 
-      if(postWaveshape > 0){
-	  applyWaveshape(filtered_buffer_2, BUFFER_SIZE);
-      }
+  while(1){
 
-//      arm_shift_q15(filtered_buffer_2, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
-//                    buffer_2, BUFFER_SIZE);
+    osSemaphoreWait (bufferFillSemaphoreHandle, 40);
+#ifdef DEBUG_PRINT
+  HAL_UART_Transmit(&huart3, "start_prepBuffer\n\r", sizeof("start_prepBuffer\n\r"), 100);
+  startTime = DWT->CYCCNT;
+#endif
 
-  } else if (buff_toggle == 1) {
-    passBufferToDAC(filtered_buffer_2, hdac);
 
-    buff_toggle = 2;
+//    if (temp_2) {
+//      temp_2 = 0;
+//
+//    }
+  taskENTER_CRITICAL();
+    // determine which buffer to fill
+    if (buff_toggle == 0) {
+      passBufferToDAC(filtered_buffer_3);
+      //passBufferToDAC(buffer_3);
 
-    clearBuffer(buffer_1);
-    // fill buffer depending on what button is being pressed
-    fillBuffer(buffer_1);
-    // addOffsetToBuffer(buffer_2);
+      buff_toggle = 1;
 
-      // arm_float_to_q15(&temp_var, &temp_arm, 1);
-      //arm_shift_q15(buffer_1, BIT_SHIFT_Q_CONV, shifted_buffer_1, BUFFER_SIZE);
-      //applyFilter(shifted_buffer_1, filtered_buffer_1, shifted_buffer_2);
-      if(getBitCrush() > 0){
-	  applyBitCrush(buffer_1, BUFFER_SIZE);
-      }
+      clearBuffer(buffer_2);
 
-      if(lowPassFilter_state == 1){
-      	 applyCustomFilter(buffer_1, filtered_buffer_1, BUFFER_SIZE);
-	}
-      else{
-	  memcpy(filtered_buffer_1, buffer_1, sizeof(filtered_buffer_1));
+
+      // fill buffer depending on what button is being pressed
+      fillBuffer(buffer_2);
+
+
+	// arm_float_to_q15(&temp_var, &temp_arm, 1);
+	//arm_shift_q15(buffer_2, BIT_SHIFT_Q_CONV, shifted_buffer_2, BUFFER_SIZE);
+	//applyFilter(shifted_buffer_2, filtered_buffer_2, shifted_buffer_3);
+	if(getBitCrush() > 0){
+	    applyBitCrush(buffer_2, BUFFER_SIZE);
 	}
 
-      if(postWaveshape > 0){
-	applyWaveshape(filtered_buffer_1, BUFFER_SIZE);
-      }
-//      arm_shift_q15(filtered_buffer_1, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
-//                    buffer_1, BUFFER_SIZE);
+	if(lowPassFilter_state == 1){
+	 applyCustomFilter(buffer_2, filtered_buffer_2, BUFFER_SIZE);
+	}
+	else{
+	    memcpy(filtered_buffer_2, buffer_2, sizeof(filtered_buffer_2) );
+	}
 
-  } else {
-    passBufferToDAC(filtered_buffer_1, hdac);
+	if(postWaveshape > 0){
+	    applyWaveshape(filtered_buffer_2, BUFFER_SIZE);
+	}
 
-    buff_toggle = 0;
 
-    clearBuffer(buffer_3);
-    // fill buffer depending on what button is being pressed
-    fillBuffer(buffer_3);
-    // addOffsetToBuffer(buffer_2);
-    //		float temp_var = 0.9999999999999;
-    //		q15_t temp_arm = 0;
-      // arm_float_to_q15(&temp_var, &temp_arm, 1);
-//      arm_shift_q15(buffer_3, BIT_SHIFT_Q_CONV, shifted_buffer_3, BUFFER_SIZE);
-//      //applyFilter(shifted_buffer_3, filtered_buffer_3, shifted_buffer_1);
+  //      arm_shift_q15(filtered_buffer_2, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
+  //                    buffer_2, BUFFER_SIZE);
 
-      if(getBitCrush() > 0){
-      	  applyBitCrush(buffer_3, BUFFER_SIZE);
-            }
+    } else if (buff_toggle == 1) {
+      passBufferToDAC(filtered_buffer_2);
+      //passBufferToDAC(buffer_1);
 
-      if(lowPassFilter_state == 1){
-	 applyCustomFilter(buffer_3, filtered_buffer_3, BUFFER_SIZE);
-      }
-      else{
-	  memcpy(filtered_buffer_3, buffer_3, sizeof(filtered_buffer_3));
-      }
+      buff_toggle = 2;
 
-      if(postWaveshape > 0){
-	applyWaveshape(filtered_buffer_3, BUFFER_SIZE);
-      }
-//      arm_shift_q15(filtered_buffer_3, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
-//                    buffer_3, BUFFER_SIZE);
+      clearBuffer(buffer_1);
+      // fill buffer depending on what button is being pressed
+      fillBuffer(buffer_1);
+      // addOffsetToBuffer(buffer_2);
+
+	// arm_float_to_q15(&temp_var, &temp_arm, 1);
+	//arm_shift_q15(buffer_1, BIT_SHIFT_Q_CONV, shifted_buffer_1, BUFFER_SIZE);
+	//applyFilter(shifted_buffer_1, filtered_buffer_1, shifted_buffer_2);
+	if(getBitCrush() > 0){
+	    applyBitCrush(buffer_1, BUFFER_SIZE);
+	}
+
+	if(lowPassFilter_state == 1){
+	   applyCustomFilter(buffer_1, filtered_buffer_1, BUFFER_SIZE);
+	  }
+	else{
+	    memcpy(filtered_buffer_1, buffer_1, sizeof(filtered_buffer_1));
+	  }
+
+	if(postWaveshape > 0){
+	  applyWaveshape(filtered_buffer_1, BUFFER_SIZE);
+	}
+  //      arm_shift_q15(filtered_buffer_1, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
+  //                    buffer_1, BUFFER_SIZE);
+
+    } else {
+      passBufferToDAC(filtered_buffer_1);
+      //passBufferToDAC(buffer_1);
+
+      buff_toggle = 0;
+
+      clearBuffer(buffer_3);
+
+      // fill buffer depending on what button is being pressed
+      fillBuffer(buffer_3);
+      // addOffsetToBuffer(buffer_2);
+      //		float temp_var = 0.9999999999999;
+      //		q15_t temp_arm = 0;
+	// arm_float_to_q15(&temp_var, &temp_arm, 1);
+  //      arm_shift_q15(buffer_3, BIT_SHIFT_Q_CONV, shifted_buffer_3, BUFFER_SIZE);
+  //      //applyFilter(shifted_buffer_3, filtered_buffer_3, shifted_buffer_1);
+
+	if(getBitCrush() > 0){
+	    applyBitCrush(buffer_3, BUFFER_SIZE);
+	      }
+
+	if(lowPassFilter_state == 1){
+	   applyCustomFilter(buffer_3, filtered_buffer_3, BUFFER_SIZE);
+	}
+	else{
+	    memcpy(filtered_buffer_3, buffer_3, sizeof(filtered_buffer_3));
+	}
+
+	if(postWaveshape > 0){
+	  applyWaveshape(filtered_buffer_3, BUFFER_SIZE);
+	}
+
+  //      arm_shift_q15(filtered_buffer_3, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
+  //                    buffer_3, BUFFER_SIZE);
+
+    }
+
+
+
+#ifdef DEBUG_PRINT
+    totalTime = DWT->CYCCNT - startTime;
+
+  char totalTimeString[10];
+  itoa(totalTime, totalTimeString, 10);
+  HAL_UART_Transmit(&huart3, totalTimeString, sizeof(totalTimeString), 100);
+
+  HAL_UART_Transmit(&huart3, "\n\rstop_prepBuffer\n\r", sizeof("\n\rstop_prepBuffer\n\r"), 100);
+#endif
+	taskEXIT_CRITICAL();
 
   }
+
+
 }
 
 void setWavetableAmplitude(uint8_t* intTracker) {
@@ -304,7 +348,7 @@ void setWavetableAmplitude(uint8_t* intTracker) {
 
 void activateLowpassFilter(uint8_t activate){
   lowPassFilter_state = activate;
-  if(activate == 1){
+  if(activate > 0){
       resetFilterHistory();
   }
 }
@@ -423,6 +467,7 @@ void turnOnCapSounds(void) {
   if (capModeActive != 1) {
     lidarModeActive = 0;
     capModeActive = 1;
+    turnSoundOn();
     osSemaphoreRelease(capSampleSemaphoreHandle);
   }
   // Sample_Cap_Touch();
@@ -435,9 +480,9 @@ void turnOffSounds(void) {
 }
 
 void calcLidarFreq(int16_t* measurement) {
-  prevlidarSampleTime = lidarSampleTime;
-  lidarSampleTime = HAL_GetTick();
-  time_delta = lidarSampleTime - prevlidarSampleTime;
+//  prevlidarSampleTime = lidarSampleTime;
+//  lidarSampleTime = HAL_GetTick();
+//  time_delta = lidarSampleTime - prevlidarSampleTime;
 
   freq_lidar = freq_lidar_new;
   freq_lidar_new = 123.471 * expf(0.00288811 * ((float)*measurement));
@@ -497,13 +542,14 @@ void DAC_BufferRefresh(void) {
   while (1) {
     // osSemaphoreWait( DAC_SemaphoreHandle, osWaitForever);
     // vTaskSuspendAll(  );
-    taskENTER_CRITICAL();
+    //taskENTER_CRITICAL();
     //taskDISABLE_INTERRUPTS();
-    prepBuffer(&hdac1);
+    //prepBuffer(&hdac1);
+//    osSemaphoreRelease (bufferFillSemaphoreHandle);
     //taskENABLE_INTERRUPTS();
-    taskEXIT_CRITICAL();
+    //taskEXIT_CRITICAL();
     // xTaskResumeAll();
-    vTaskSuspend(NULL);
+    //vTaskSuspend(NULL);
 
     // taskEXIT_CRITICAL_FROM_ISR(uxSavedInterruptStatus);
   }
@@ -543,7 +589,12 @@ BaseType_t xYieldRequired;
 
 void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac) {
   //	uxSavedInterruptStatus = taskENTER_CRITICAL_FROM_ISR();
-  prepBuffer(hdac);
+  //prepBuffer(hdac);
+#ifdef DEBUG_PRINT
+  startTime = DWT->CYCCNT;
+  //HAL_UART_Transmit(&huart3, "DMA\n\r", sizeof("DMA\n\r"), 100);
+#endif
+  osSemaphoreRelease (bufferFillSemaphoreHandle);
   //	taskEXIT_CRITICAL_FROM_ISR(uxSavedInterruptStatus);
   // osSemaphoreRelease (DAC_SemaphoreHandle);
   // vTaskSuspend( NULL );
@@ -551,10 +602,24 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac) {
   // xYieldRequired = xTaskResumeFromISR( DAC_BufferRefreshHandle );
 }
 
-void passBufferToDAC(q15_t* buffer, DAC_HandleTypeDef* hdac) {
+uint8_t tempDAC_State;
+HAL_StatusTypeDef DAC_status;
+void passBufferToDAC(q15_t* buffer) {
   HAL_GPIO_TogglePin(LED_LAT_GPIO_Port, LED_LAT_Pin);
-  while(HAL_OK != HAL_DAC_Start_DMA(hdac, DAC_CHANNEL_1, (uint32_t*)buffer, 512,
-                    DAC_ALIGN_12B_R));
+
+  while(HAL_OK != HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)buffer, 512,
+  DAC_ALIGN_12B_R));
+//      DAC_status = HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)buffer, 512,
+//                    DAC_ALIGN_12B_R);
+
+//  if(DAC_status != HAL_OK){
+//      tempDAC_State = 1;
+//      osSemaphoreRelease (bufferFillSemaphoreHandle);
+//  }
+
+//  if(DAC_status == HAL_OK){
+//        tempDAC_State = 1;
+//    }
 }
 
 void clearBuffer(q15_t* buffer) {

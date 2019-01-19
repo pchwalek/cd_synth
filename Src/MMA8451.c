@@ -26,6 +26,8 @@
 #include "wave_synth.h"
 #include "filter.h"
 
+#include "usart.h"
+
 
 #define ACC_DIST 	0.056769762 //in meters
 //#define HZ_1		6.28318
@@ -36,9 +38,11 @@
 uint16_t 		POV_map2	=	0;
 volatile float angVel = -1;
 volatile uint8_t sample[6];
-float gravityVector[] = {0,0,-1};
-float dotProd;
-float angle;
+const float gravityVector[] = {0,0,-1};
+volatile float dotProd;
+volatile float angle;
+
+uint8_t samplePacket;
 
 /**************************************************************************/
 /*!
@@ -75,8 +79,12 @@ void accelerometerThread(void){
 
 	while(1){
 	  osSemaphoreWait (accSampleSemaphoreHandle, osWaitForever);
-
+#ifdef DEBUG_PRINT
+  HAL_UART_Transmit(&huart3, "start_acc\n\r", sizeof("start_acc\n\r"), 100);
+#endif
+  //taskENTER_CRITICAL();
 	  HAL_I2C_Mem_Read_IT(&hi2c2, _i2caddr<<1, MMA8451_REG_OUT_X_MSB, 1, sample, 6);
+	  //taskEXIT_CRITICAL();
 	  osDelay(10);
 //	  osMutexWait(I2C3_mutex_id, osWaitForever);
 
@@ -87,7 +95,7 @@ void accelerometerThread(void){
 	  //if (I2C3_mutex_id != NULL) osMutexWait(I2C3_mutex_id, osWaitForever);
 	  //calcFilterFreqAcc(x_g, y_g, z_g);
 
-	  calculateAngle(x_g, y_g, z_g);
+	  angle = calculateAngle(x_g, y_g, z_g);
 	  setCutoffFreq(angle);
 
 //	  /* Get the orientation of the sensor */
@@ -136,6 +144,9 @@ void accelerometerThread(void){
 //	        break;
 //	      }
 	  //calcSpin();
+#ifdef DEBUG_PRINT
+  HAL_UART_Transmit(&huart3, "stop_acc\n\r", sizeof("stop_acc\n\r"), 100);
+#endif
 	}
 }
 
@@ -167,10 +178,10 @@ uint8_t MMA8451_readRegister8(uint8_t reg) {
 //    Wire.endTransmission(false); // MMA8451 + friends uses repeated start!!
 //    Wire.requestFrom(_i2caddr, 1);
 //#endif
-	uint8_t sample;
+
     HAL_I2C_Mem_Read(&hi2c2, _i2caddr<<1, reg, 1, &sample, 1, 2);
     
-    return sample;
+    return samplePacket;
 }
 
 /**************************************************************************/
@@ -193,6 +204,8 @@ bool MMA8451_begin(void) {
 
   /* Check connection */
   uint8_t deviceid = MMA8451_readRegister8(MMA8451_REG_WHOAMI);
+  //HAL_Delay(4000);
+
   if (deviceid != 0x1A)
   {
     /* No MMA8451 detected ... return false */
@@ -422,11 +435,11 @@ void MMA8451_getSensor(sensor_t *sensor) {
 }
 
 
-void calculateAngle(float x_g, float y_g, float z_g){
+float calculateAngle(float x_g, float y_g, float z_g){
 	float accVector[] = {x_g, y_g, z_g};
 
 	arm_dot_prod_f32(accVector,gravityVector,3,&dotProd);
 
-	angle = acos(dotProd/ ( sqrt(x_g*x_g + y_g*y_g + z_g*z_g)));
+	return (float) acos(dotProd/ ( sqrt(x_g*x_g + y_g*y_g + z_g*z_g)));
 //	return angle;
 }
