@@ -244,6 +244,37 @@ void ResistiveTouchSampler(void){
 	//		}
 	//	}
 
+//		if(HAL_GPIO_ReadPin(BUTTON_7_GPIO_Port, BUTTON_7_Pin) == GPIO_PIN_SET){
+//		  if ( (HAL_GetTick() - button_7_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
+//		    button_7_timeout = HAL_GetTick();
+//
+//		    button_7_state++;
+//
+//		    if(button_7_state == 1){
+//		      Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 1);
+//		      setPreWave(1);
+//
+//		    }
+//		    else if(button_7_state == 2){
+//		      Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 1);
+//		      Set_LED_Setting(BUTTON_7_R_REG, BUTTON_7_R_PIN, 1);
+//		      setPreWave(2);
+//		    }
+//		    else if(button_7_state == 3){
+//		      Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
+//		      Set_LED_Setting(BUTTON_7_R_REG, BUTTON_7_R_PIN, 1);
+//		      setPreWave(3);
+//		    }
+//		    else if(button_7_state == 4){
+//		      Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
+//		      Set_LED_Setting(BUTTON_7_R_REG, BUTTON_7_R_PIN, 0);
+//		      setPreWave(0);
+//		      button_7_state = 0;
+//		    }
+//
+//		  }
+//		}
+
 		if(HAL_GPIO_ReadPin(BUTTON_7_GPIO_Port, BUTTON_7_Pin) == GPIO_PIN_SET){
 		  if ( (HAL_GetTick() - button_7_timeout) > BUTTON_DEBOUNCE_THRESH_MS){
 		    button_7_timeout = HAL_GetTick();
@@ -252,23 +283,25 @@ void ResistiveTouchSampler(void){
 
 		    if(button_7_state == 1){
 		      Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 1);
-		      setPreWave(1);
+		      startRecording();
+		      //setPreWave(1);
 
 		    }
 		    else if(button_7_state == 2){
-		      Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 1);
-		      Set_LED_Setting(BUTTON_7_R_REG, BUTTON_7_R_PIN, 1);
-		      setPreWave(2);
-		    }
-		    else if(button_7_state == 3){
 		      Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
 		      Set_LED_Setting(BUTTON_7_R_REG, BUTTON_7_R_PIN, 1);
-		      setPreWave(3);
+		      stopRecording();
+		    }
+		    else if(button_7_state == 3){
+		      Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 1);
+		      Set_LED_Setting(BUTTON_7_R_REG, BUTTON_7_R_PIN, 1);
+		      startPlayback();
 		    }
 		    else if(button_7_state == 4){
 		      Set_LED_Setting(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
 		      Set_LED_Setting(BUTTON_7_R_REG, BUTTON_7_R_PIN, 0);
-		      setPreWave(0);
+		      //setPreWave(0);
+		      stopPlayback();
 		      button_7_state = 0;
 		    }
 

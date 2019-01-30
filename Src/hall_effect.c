@@ -11,7 +11,7 @@
 
 //#define TIME_TO_ACTIVATE_POV
 
-volatile uint8_t intTracker 	= 0;
+volatile int8_t intTracker 	= 0;
 volatile uint8_t countDown 		= 0;
 volatile uint8_t countUp		= 1;
 
@@ -55,7 +55,7 @@ void HALL_Handler(void){
 		countDown 	= 1;
 		countUp 	= 0;
 	}
-	else if(intTracker == 0){
+	else if(intTracker <= 0){
 		countDown 	= 0;
 		countUp 	= 1;
 	}

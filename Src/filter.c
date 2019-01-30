@@ -117,13 +117,13 @@ void applyCustomFilter(q15_t* input_buffer, q15_t* output_buffer, uint16_t size)
 //
 //
 //      arm_scale_q15(input_buffer,tempVal,0,temp_buffer,512);
-
+      tempVal = output_buffer[i];
       //ref: https://www.hackaudio.com/digital-signal-processing/distortion-effects/soft-clipping/
 #ifdef APPLY_SOFT_CLIPPING
       //output_buffer[i] = 2048 * (1/1+exp((1000-output_buffer[i])/1024));
       //output_buffer[i] = 1024 * tanh( (output_buffer[i]/1024.0) - 1 ) + 1024;
       //output_buffer[i] = output_buffer[i] - (1/3) * (output_buffer[i]*output_buffer[i]*output_buffer[i]);
-      output_buffer[i] = 1024.0*(2.0/PI)*atan((output_buffer[i]-1024.0)/700.0) + 1024.0;
+      output_buffer[i] = ((double) 1024.0*(2.0/PI))*atan(( ( (double) output_buffer[i])-1024.0)/700.0) + 1024.0;
 
 #endif
 
@@ -131,6 +131,8 @@ void applyCustomFilter(q15_t* input_buffer, q15_t* output_buffer, uint16_t size)
       x_1 = input_buffer[i];
       y_2 = y_1;
       y_1 = output_buffer[i];
+
+
   }
 //  totalT = DWT->CYCCNT - startT;
 //  startT = DWT->CYCCNT - totalT;
@@ -170,7 +172,10 @@ void setCutoffFreq(float inputAngle){
 }
 
 double angleToCutoffFreq(float inputAngle){
-  return 16000 * expf(-1.01966 * inputAngle);
+  //return 16000 * expf(-1.01966 * inputAngle); //650-16000
+
+  return 16000 * expf(-1.51966  * inputAngle); //135-16000
+
 }
 
 void changeQ(double new_Q){

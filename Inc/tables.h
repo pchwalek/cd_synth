@@ -56,7 +56,7 @@ const uint16_t PROGMEM PITCHS[]={
 0x5462,0x5966,0x5EB7,0x6459,0x6A50,0x70A3,0x7756,0x7E6E,0x85F3,0x8DEA,0x965A,0x9F4B,0xA8C4,0xB2CD,0xBD6F,0xC8B2,
 };
 */
-const uint16_t SinTable[]=
+const int16_t SinTable[]=
 {
 	0,	//0
 	3,	//1
@@ -316,7 +316,7 @@ const uint16_t SinTable[]=
 	-4,	//255
 };
 
-const uint16_t TriangleTable[]=
+const int16_t TriangleTable[]=
 {
 	0,	//0
 	1,	//1
@@ -576,7 +576,7 @@ const uint16_t TriangleTable[]=
 	-2,	//255
 };
 
-const uint16_t SquareTable[]=
+const int16_t SquareTable[]=
 {
 	127,	//0
 	127,	//1
@@ -835,7 +835,7 @@ const uint16_t SquareTable[]=
 	-125,	//254
 	-1,	//255
 };
-const uint16_t SawTable[]=
+const int16_t SawTable[]=
 {
 	128,	//0
 	127,	//1
@@ -1094,7 +1094,7 @@ const uint16_t SawTable[]=
 	-125,	//254
 	-127,	//255
 };
-const uint16_t RampTable[]=
+const int16_t RampTable[]=
 {
 	-127,	//0
 	-126,	//1
@@ -2323,7 +2323,7 @@ const int16_t WAVESHAPE_TANH_DATA[255] =
                     127, 127, 127, 127, 127, 127, 127, 127, 127
             };
 
-const int16_t WAVESHAPE_CHEBYSHEV_4TH_256_DATATANH_DATA[255] =
+const int16_t CHEBYSHEV_4TH_256_DATA[255] =
     {
                   127, 112, 97, 82,
                   68, 55, 42, 30, 19, 7, -3, -13, -23, -32, -40, -49, -56, -63, -70, -77, -83,

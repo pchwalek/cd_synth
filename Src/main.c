@@ -125,7 +125,7 @@ void MX_FREERTOS_Init(void);
   * @retval int
   */
 int main(void)
-  {
+   {
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -322,107 +322,6 @@ void SystemClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
-//volatile uint32_t temp_adc;
-//char temp_buf2[10];
-//uint32_t temp_time;
-
-
-//volatile uint32_t curr_ADC_sample = 0;
-//volatile uint32_t prev_ADC_sample = 0;
-//
-//
-//volatile uint8_t quarter_spin_up 	= 	0;
-//volatile uint8_t quarter_spin_down 	= 	0;
-//volatile float RPS 					= 	0;
-
-//void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc)
-//{
-//	curr_ADC_sample++;
-//  if (__HAL_ADC_GET_FLAG(hadc, ADC_FLAG_EOC))
-//    {
-//
-//	temp_adc = HAL_ADC_GetValue(hadc);
-//	if(temp_adc > HALL_UPPER_THRESH){
-//		if(quarter_spin_up == 0){
-//			quarter_spin_up = 1;
-//
-//			RPS = (curr_ADC_sample - prev_ADC_sample) * ((float) ADC_SAMPLE_TIME) * 4;
-//			prev_ADC_sample = curr_ADC_sample;
-//			RPS_LED();
-//		}
-//
-//	}
-//	else if (temp_adc < HALL_LOWER_THRESH){
-//		if(quarter_spin_down == 0){
-//			quarter_spin_down = 1;
-//
-//			RPS = (curr_ADC_sample - prev_ADC_sample) * ((float) ADC_SAMPLE_TIME) * 4;
-//			prev_ADC_sample = curr_ADC_sample;
-//			RPS_LED();
-//		}
-//
-//	}
-//	else{
-//		quarter_spin_up = 0;
-//		quarter_spin_down = 0;
-//	}
-//
-//	itoa(temp_adc, temp_buf2, 10);
-//	HAL_UART_Transmit(&huart3, (uint8_t*) temp_buf2, sizeof(temp_buf2), 10);
-//	char str[5] = "\n\r";
-//	HAL_UART_Transmit(&huart3, (uint8_t*) str, sizeof(str), 10);
-//    }
-//}
-
-
-//void RPS_LED(void){
-//	if(RPS < RPS_LED_THRESH){
-//		ledOut2(1);
-//	}
-//	else if(RPS < (2*RPS_LED_THRESH)){
-//		ledOut2(2);
-//	}
-//	else if(RPS < (3*RPS_LED_THRESH)){
-//		ledOut2(3);
-//		}
-//	else if(RPS < (4*RPS_LED_THRESH)){
-//		ledOut2(4);
-//		}
-//	else if(RPS < (5*RPS_LED_THRESH)){
-//		ledOut2(5);
-//		}
-//	else if(RPS < (6*RPS_LED_THRESH)){
-//		ledOut2(6);
-//		}
-//	else if(RPS < (7*RPS_LED_THRESH)){
-//		ledOut2(7);
-//		}
-//	else if(RPS < (8*RPS_LED_THRESH)){
-//		ledOut2(8);
-//		}
-//	else if(RPS < (9*RPS_LED_THRESH)){
-//		ledOut2(9);
-//		}
-//	else if(RPS < (10*RPS_LED_THRESH)){
-//		ledOut2(10);
-//		}
-//	else if(RPS < (11*RPS_LED_THRESH)){
-//		ledOut2(11);
-//		}
-//	else if(RPS < (12*RPS_LED_THRESH)){
-//		ledOut2(12);
-//			}
-//	else if(RPS < (13*RPS_LED_THRESH)){
-//		ledOut2(13);
-//			}
-//	else if(RPS < (14*RPS_LED_THRESH)){
-//		ledOut2(14);
-//			}
-//	else if(RPS < (15*RPS_LED_THRESH)){
-//		ledOut2(15);
-//	}
-//}
-
 void HAL_COMP_TriggerCallback(COMP_HandleTypeDef *hcomp){
 	HALL_Handler();
 }
@@ -446,24 +345,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
   }
   else if(GPIO_Pin == VL_INT_Pin){
 	  if(isLidarModeActive()) osSemaphoreRelease (lidarSampleReadySemaphoreHandle);
-
-//	  if (isLidarModeActive()){
-//		  HAL_GPIO_TogglePin(LED_LAT_GPIO_Port, LED_LAT_Pin);
-//		  LidarMeasurement();
-//	  }
-	  //LidarMeasurement();
   }
-//  else if(GPIO_Pin == HALL_INT_Pin){
-//	  //LED_state++;
-////	  Set_LED(BUTTON_3_G_REG, BUTTON_3_G_PIN, LED_state%2);
-//	  //HALL_Handler();
-//  }
-//  else{
-//	  ResistiveTouchSampler();
-//  }
-  /* NOTE: This function should not be modified, when the callback is needed,
-           the HAL_GPIO_EXTI_Callback could be implemented in the user file
-   */
 }
 
 void HAL_SPI_TxCpltCallback(SPI_HandleTypeDef *hspi){

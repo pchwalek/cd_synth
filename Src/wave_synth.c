@@ -12,6 +12,8 @@
 #include "arm_math.h"
 #include "res_touch.h"
 
+#include "ADSR.h"
+
 #include "usart.h"
 
 #include "stdlib.h"
@@ -71,11 +73,29 @@
 #define NOTE_A5S 932.328
 #define NOTE_B5 987.767
 
+#define PLAYBACK_DIV	1000.0;
+
 #define ALPHA_DELTA_FREQ	0.001
 
 #define UPPER_BOUND 	2048
 #define BUFFER_OFFSET 	1024
 #define LOWER_BOUND	0
+
+#define PLAYBACK_SCALE	1.0
+
+// ADSR: https://blog.landr.com/adsr-envelopes-infographic/
+#define ATTACK_SAMPLES	10000 // reference from start
+#define ATTACK_THRESH	1.3
+#define ATTACK_ALPHA	0.0005
+#define DELAY_SAMPLES	70000 // absolute (DELAY DURATION + ATTACK DURATION)
+#define DELAY_THRESH	1.0
+#define DELAY_ALPHA	0.00005
+#define	RELEASE_SAMPLES	90000 // absolute (DELAY DURATION + ATTACK DURATION + RELEASE_DURATION)
+#define RELEASE_THRESH	0
+#define RELEASE_ALPHA	0.00018
+
+#define MAX_RECORDING_SIZE	240000
+q15_t recording[MAX_RECORDING_SIZE];
 
 int16_t input_val = 0;
 
@@ -92,20 +112,49 @@ int32_t index_10 = 0;
 int32_t index_11 = 0;
 int32_t index_12 = 0;
 
+uint32_t freq_1_sample_tracker = 0;
+double freq_1_multiplier = 0;
+uint32_t freq_2_sample_tracker = 0;
+double freq_2_multiplier = 0;
+uint32_t freq_3_sample_tracker = 0;
+double freq_3_multiplier = 0;
+uint32_t freq_4_sample_tracker = 0;
+double freq_4_multiplier = 0;
+uint32_t freq_5_sample_tracker = 0;
+double freq_5_multiplier = 0;
+uint32_t freq_6_sample_tracker = 0;
+double freq_6_multiplier = 0;
+uint32_t freq_7_sample_tracker = 0;
+double freq_7_multiplier = 0;
+uint32_t freq_8_sample_tracker = 0;
+double freq_8_multiplier = 0;
+uint32_t freq_9_sample_tracker = 0;
+double freq_9_multiplier = 0;
+uint32_t freq_10_sample_tracker = 0;
+double freq_10_multiplier = 0;
+uint32_t freq_11_sample_tracker = 0;
+double freq_11_multiplier = 0;
+uint32_t freq_12_sample_tracker = 0;
+double freq_12_multiplier = 0;
+
+uint32_t freq_lidar_sample_tracker = 0;
+double freq_lidar_multiplier = 0;
+
+
 uint8_t preWaveshape = 0;
 uint8_t postWaveshape = 0;
 
-q15_t temp[BUFFER_SIZE];
+//q15_t temp[BUFFER_SIZE];
 
 // const uint16_t *waveTable_1 = SinTable;
 // const char *waveTable_2 = SawTable;
 // const char *waveTable_3 = RampTable;
 uint16_t* waveTable;
 
-const uint16_t sine_wave_array[32] = {
-    2047, 1648, 1264, 910,  600,  345,  156,  39,   0,    39,   156,
-    345,  600,  910,  1264, 1648, 2048, 2447, 2831, 3185, 3495, 3750,
-    3939, 4056, 4095, 4056, 3939, 3750, 3495, 3185, 2831, 2447};
+//const uint16_t sine_wave_array[32] = {
+//    2047, 1648, 1264, 910,  600,  345,  156,  39,   0,    39,   156,
+//    345,  600,  910,  1264, 1648, 2048, 2447, 2831, 3185, 3495, 3750,
+//    3939, 4056, 4095, 4056, 3939, 3750, 3495, 3185, 2831, 2447};
 
 q15_t buffer_1[BUFFER_SIZE];
 q15_t buffer_2[BUFFER_SIZE];
@@ -120,7 +169,7 @@ q15_t shifted_buffer_2[BUFFER_SIZE];
 q15_t shifted_buffer_3[BUFFER_SIZE];
 
 uint8_t buff_toggle = 0;
-int16_t max_table_index = 255;
+uint32_t max_table_index = 255;
 uint8_t octave = 4;
 
 uint8_t signal_on = 1;
@@ -161,6 +210,8 @@ float freq_lidar_ind = 0;
 float temp1 = 0;
 float temp2 = 0;
 
+uint32_t recordingIndex = 0;
+
 uint32_t prevlidarSampleTime;
 uint32_t lidarSampleTime;
 //float time_delta;
@@ -197,6 +248,16 @@ uint8_t lowPassFilter_state = 0;
 uint32_t startTime;
 uint32_t totalTime;
 
+char currentTable;
+
+uint8_t playbackStatus = 0;
+uint32_t offset = 0;
+uint32_t recordIndex = 0;
+
+uint8_t recordingStatus = 0;
+
+q15_t deleteMe = 0 ;
+
 void prepBuffer(void) {
 
 
@@ -226,7 +287,10 @@ void prepBuffer(void) {
 
       buff_toggle = 1;
 
+      // playback buffer already has DC bias
+      //if(playbackStatus != 1){
       clearBuffer(buffer_2);
+      //}
 
 
       // fill buffer depending on what button is being pressed
@@ -251,6 +315,16 @@ void prepBuffer(void) {
 	    applyWaveshape(filtered_buffer_2, BUFFER_SIZE);
 	}
 
+	if(playbackStatus == 1){
+		    for(int i = 0; i < BUFFER_SIZE; i++){
+			filtered_buffer_2[i] += (addPlayback() - ((int16_t)BUFFER_OFFSET)) * PLAYBACK_SCALE;
+		    }
+		}
+
+	else if(recordingStatus == 1){
+	    recordBuffer(filtered_buffer_2, sizeof(filtered_buffer_2));
+	}
+
 
   //      arm_shift_q15(filtered_buffer_2, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
   //                    buffer_2, BUFFER_SIZE);
@@ -261,7 +335,10 @@ void prepBuffer(void) {
 
       buff_toggle = 2;
 
-      clearBuffer(buffer_1);
+      // playback buffer already has DC bias
+//            if(playbackStatus != 1){
+      	  clearBuffer(buffer_1);
+//            }
       // fill buffer depending on what button is being pressed
       fillBuffer(buffer_1);
       // addOffsetToBuffer(buffer_2);
@@ -283,6 +360,16 @@ void prepBuffer(void) {
 	if(postWaveshape > 0){
 	  applyWaveshape(filtered_buffer_1, BUFFER_SIZE);
 	}
+
+	if(playbackStatus == 1){
+	    for(int i = 0; i < BUFFER_SIZE; i++){
+		filtered_buffer_1[i] += (addPlayback() - ((int16_t)BUFFER_OFFSET) ) * PLAYBACK_SCALE;
+	    }
+	}
+
+	else if(recordingStatus == 1){
+	    recordBuffer(filtered_buffer_1, sizeof(filtered_buffer_1));
+	}
   //      arm_shift_q15(filtered_buffer_1, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
   //                    buffer_1, BUFFER_SIZE);
 
@@ -292,7 +379,10 @@ void prepBuffer(void) {
 
       buff_toggle = 0;
 
+      // playback buffer already has DC bias
+//      if(playbackStatus != 1){
       clearBuffer(buffer_3);
+//      }
 
       // fill buffer depending on what button is being pressed
       fillBuffer(buffer_3);
@@ -318,6 +408,15 @@ void prepBuffer(void) {
 	  applyWaveshape(filtered_buffer_3, BUFFER_SIZE);
 	}
 
+	if(playbackStatus == 1){
+		    for(int i = 0; i < BUFFER_SIZE; i++){
+			filtered_buffer_3[i] += (addPlayback() - ((int16_t)BUFFER_OFFSET)) * PLAYBACK_SCALE;
+		    }
+		}
+
+	else if(recordingStatus == 1){
+	    recordBuffer(filtered_buffer_3, sizeof(filtered_buffer_3));
+	}
   //      arm_shift_q15(filtered_buffer_3, (-1 * ((int8_t)BIT_SHIFT_Q_CONV)),
   //                    buffer_3, BUFFER_SIZE);
 
@@ -382,25 +481,31 @@ void turnSoundOn(void){
 }
 
 void setTable(char table) {
-  switch (table) {
-    case 'S':
-      switchTable(SinTable, sizeof(SinTable) >> 1);
-      break;
-    case 'W':
-      switchTable(SawTable, sizeof(SawTable) >> 1);
-      break;
-    case 'T':
-      switchTable(TriangleTable, sizeof(TriangleTable) >> 1);
-      break;
-    case 'R':
-      switchTable(RampTable, sizeof(RampTable) >> 1);
-      break;
-    case 'Q':
-      switchTable(SquareTable, sizeof(SquareTable) >> 1);
-      break;
-    default:
-      switchTable(SinTable, sizeof(SinTable) >> 1);
-      break;
+  currentTable = table;
+
+  if(playbackStatus == 0){
+
+    switch (table) {
+      case 'S':
+	switchTable(SinTable, sizeof(SinTable) >> 1);
+	break;
+      case 'W':
+	switchTable(SawTable, sizeof(SawTable) >> 1);
+	break;
+      case 'T':
+	switchTable(TriangleTable, sizeof(TriangleTable) >> 1);
+	break;
+      case 'R':
+	switchTable(RampTable, sizeof(RampTable) >> 1);
+	break;
+      case 'Q':
+	switchTable(SquareTable, sizeof(SquareTable) >> 1);
+	break;
+      default:
+	switchTable(SinTable, sizeof(SinTable) >> 1);
+	break;
+    }
+
   }
 }
 
@@ -555,7 +660,7 @@ void DAC_BufferRefresh(void) {
   }
 }
 
-void switchTable(const uint16_t* desired_table, int16_t size) {
+void switchTable(int16_t* desired_table, uint32_t size) {
   max_table_index = size;
   waveTable = desired_table;
   switchOctave(octave);
@@ -604,11 +709,21 @@ void HAL_DAC_ConvCpltCallbackCh1(DAC_HandleTypeDef* hdac) {
 
 uint8_t tempDAC_State;
 HAL_StatusTypeDef DAC_status;
-void passBufferToDAC(q15_t* buffer) {
-  HAL_GPIO_TogglePin(LED_LAT_GPIO_Port, LED_LAT_Pin);
+uint32_t startTime = 0;
 
-  while(HAL_OK != HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)buffer, 512,
-  DAC_ALIGN_12B_R));
+void passBufferToDAC(q15_t* buffer) {
+  //HAL_GPIO_TogglePin(LED_LAT_GPIO_Port, LED_LAT_Pin);
+
+  //startTime = HAL_GetTick();
+  if(HAL_OK != HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)buffer, 512,
+  DAC_ALIGN_12B_R)){
+      HAL_DAC_Stop_DMA(&hdac1, DAC_CHANNEL_1);
+      while(HAL_OK != HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)buffer, 512,
+        DAC_ALIGN_12B_R));
+  }
+
+
+
 //      DAC_status = HAL_DAC_Start_DMA(&hdac1, DAC_CHANNEL_1, (uint32_t*)buffer, 512,
 //                    DAC_ALIGN_12B_R);
 
@@ -633,69 +748,134 @@ void fillBuffer(q15_t* buffer) {
   // LED_State(KEY_1_PORT, KEY_1_PIN)
 
   if (lidarModeActive) {
-    addTableToBuffer(buffer, &freq_lidar_inc, &freq_lidar_ind);
+    addTableToBuffer(buffer, &freq_lidar_inc, &freq_lidar_ind, &freq_lidar_sample_tracker, &freq_lidar_multiplier);
   } else if (capModeActive) {
+
     if (LED_State(CAP_1_LED_PORT, CAP_1_LED_PIN)) {
-      addTableToBuffer(buffer, &freq_1_inc, &freq_1_ind);
+      addTableToBuffer(buffer, &freq_1_inc, &freq_1_ind, &freq_1_sample_tracker, &freq_1_multiplier);
     } else {
-      reset_index(&freq_1_ind);
+	if( (freq_1_sample_tracker != 0) && (freq_1_sample_tracker < RELEASE_SAMPLES) ){
+	    releaseHandler(buffer, &freq_1_inc, &freq_1_ind, &freq_1_sample_tracker, &freq_1_multiplier);
+	}
+      //reset_index(&freq_1_ind);
     }
     if (LED_State(CAP_2_LED_PORT, CAP_2_LED_PIN)) {
-      addTableToBuffer(buffer, &freq_2_inc, &freq_2_ind);
+      addTableToBuffer(buffer, &freq_2_inc, &freq_2_ind, &freq_2_sample_tracker, &freq_2_multiplier);
     } else {
-      reset_index(&freq_2_ind);
+	if( (freq_2_sample_tracker != 0) && (freq_2_sample_tracker < RELEASE_SAMPLES) ){
+		    releaseHandler(buffer, &freq_2_inc, &freq_2_ind, &freq_2_sample_tracker, &freq_2_multiplier);
+		}
     }
     if (LED_State(CAP_3_LED_PORT, CAP_3_LED_PIN)) {
-      addTableToBuffer(buffer, &freq_3_inc, &freq_3_ind);
+      addTableToBuffer(buffer, &freq_3_inc, &freq_3_ind, &freq_3_sample_tracker, &freq_3_multiplier);
     } else {
-      reset_index(&freq_3_ind);
+	if( (freq_3_sample_tracker != 0) && (freq_3_sample_tracker < RELEASE_SAMPLES) ){
+		    releaseHandler(buffer, &freq_3_inc, &freq_3_ind, &freq_3_sample_tracker, &freq_3_multiplier);
+		}
     }
     if (LED_State(CAP_4_LED_PORT, CAP_4_LED_PIN)) {
-      addTableToBuffer(buffer, &freq_4_inc, &freq_4_ind);
+      addTableToBuffer(buffer, &freq_4_inc, &freq_4_ind, &freq_4_sample_tracker, &freq_4_multiplier);
     } else {
-      reset_index(&freq_4_ind);
+	if( (freq_4_sample_tracker != 0) && (freq_4_sample_tracker < RELEASE_SAMPLES) ){
+		    releaseHandler(buffer, &freq_4_inc, &freq_4_ind, &freq_4_sample_tracker, &freq_4_multiplier);
+		}
     }
     if (LED_State(CAP_5_LED_PORT, CAP_5_LED_PIN)) {
-      addTableToBuffer(buffer, &freq_5_inc, &freq_5_ind);
+      addTableToBuffer(buffer, &freq_5_inc, &freq_5_ind, &freq_5_sample_tracker, &freq_5_multiplier);
     } else {
-      reset_index(&freq_5_ind);
+	if( (freq_5_sample_tracker != 0) && (freq_5_sample_tracker < RELEASE_SAMPLES) ){
+		    releaseHandler(buffer, &freq_5_inc, &freq_5_ind, &freq_5_sample_tracker, &freq_5_multiplier);
+		}
     }
     if (LED_State(CAP_6_LED_PORT, CAP_6_LED_PIN)) {
-      addTableToBuffer(buffer, &freq_6_inc, &freq_6_ind);
+      addTableToBuffer(buffer, &freq_6_inc, &freq_6_ind, &freq_6_sample_tracker, &freq_6_multiplier);
     } else {
-      reset_index(&freq_6_ind);
+	if( (freq_6_sample_tracker != 0) && (freq_6_sample_tracker < RELEASE_SAMPLES) ){
+		    releaseHandler(buffer, &freq_6_inc, &freq_6_ind, &freq_6_sample_tracker, &freq_6_multiplier);
+		}
     }
     if (LED_State(CAP_7_LED_PORT, CAP_7_LED_PIN)) {
-      addTableToBuffer(buffer, &freq_7_inc, &freq_7_ind);
+      addTableToBuffer(buffer, &freq_7_inc, &freq_7_ind, &freq_7_sample_tracker, &freq_7_multiplier);
     } else {
-      reset_index(&freq_7_ind);
+	if( (freq_7_sample_tracker != 0) && (freq_7_sample_tracker < RELEASE_SAMPLES) ){
+		    releaseHandler(buffer, &freq_7_inc, &freq_7_ind, &freq_7_sample_tracker, &freq_7_multiplier);
+		}
     }
     if (LED_State(CAP_8_LED_PORT, CAP_8_LED_PIN)) {
-      addTableToBuffer(buffer, &freq_8_inc, &freq_8_ind);
+      addTableToBuffer(buffer, &freq_8_inc, &freq_8_ind, &freq_8_sample_tracker, &freq_8_multiplier);
     } else {
-      reset_index(&freq_8_ind);
+	if( (freq_8_sample_tracker != 0) && (freq_8_sample_tracker < RELEASE_SAMPLES) ){
+		    releaseHandler(buffer, &freq_8_inc, &freq_8_ind, &freq_8_sample_tracker, &freq_8_multiplier);
+		}
     }
     if (LED_State(CAP_9_LED_PORT, CAP_9_LED_PIN)) {
-      addTableToBuffer(buffer, &freq_9_inc, &freq_9_ind);
+      addTableToBuffer(buffer, &freq_9_inc, &freq_9_ind, &freq_9_sample_tracker, &freq_9_multiplier);
     } else {
-      reset_index(&freq_9_ind);
+	if( (freq_9_sample_tracker != 0) && (freq_9_sample_tracker < RELEASE_SAMPLES) ){
+		    releaseHandler(buffer, &freq_9_inc, &freq_9_ind, &freq_9_sample_tracker, &freq_9_multiplier);
+		}
     }
     if (LED_State(CAP_10_LED_PORT, CAP_10_LED_PIN)) {
-      addTableToBuffer(buffer, &freq_10_inc, &freq_10_ind);
+      addTableToBuffer(buffer, &freq_10_inc, &freq_10_ind, &freq_10_sample_tracker, &freq_10_multiplier);
     } else {
-      reset_index(&freq_10_ind);
+      if( (freq_10_sample_tracker != 0) && (freq_10_sample_tracker < RELEASE_SAMPLES) ){
+	    releaseHandler(buffer, &freq_10_inc, &freq_10_ind, &freq_10_sample_tracker, &freq_10_multiplier);
+	}
     }
     if (LED_State(CAP_11_LED_PORT, CAP_11_LED_PIN)) {
-      addTableToBuffer(buffer, &freq_11_inc, &freq_11_ind);
+      addTableToBuffer(buffer, &freq_11_inc, &freq_11_ind, &freq_11_sample_tracker, &freq_11_multiplier);
     } else {
-      reset_index(&freq_11_ind);
+	if( (freq_11_sample_tracker != 0) && (freq_11_sample_tracker < RELEASE_SAMPLES) ){
+		    releaseHandler(buffer, &freq_11_inc, &freq_11_ind, &freq_11_sample_tracker, &freq_11_multiplier);
+		}
     }
     if (LED_State(CAP_12_LED_PORT, CAP_12_LED_PIN)) {
-      addTableToBuffer(buffer, &freq_12_inc, &freq_12_ind);
+      addTableToBuffer(buffer, &freq_12_inc, &freq_12_ind, &freq_12_sample_tracker, &freq_12_multiplier);
     } else {
-      reset_index(&freq_12_ind);
+	if( (freq_12_sample_tracker != 0) && (freq_12_sample_tracker < RELEASE_SAMPLES) ){
+		    releaseHandler(buffer, &freq_12_inc, &freq_12_ind, &freq_12_sample_tracker, &freq_12_multiplier);
+		}
     }
   }
+}
+
+void releaseHandler(q15_t* buffer, float* freq_inc, float* freq_ind, uint32_t* freq_sample_tracker, double* freq_multiplier){
+  if( (*freq_sample_tracker) >= RELEASE_SAMPLES || (*freq_sample_tracker) == 0){
+      if((*freq_sample_tracker) == 0) (*freq_sample_tracker) = 0;
+      return;
+  }
+
+  if((*freq_sample_tracker) < DELAY_SAMPLES){
+      (*freq_sample_tracker) =  DELAY_SAMPLES;
+  }
+
+  for (int i = 0; i < BUFFER_SIZE; i++) {
+  //        table_val = table_val[WAVESHAPE_CHEBYSHEV_4TH_256_DATATANH_DATA+127];
+          //buffer[i] += ampltiude_multiplier * table_val * SCALE_OUTPUT;
+          //buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_on;
+
+      (*freq_sample_tracker)++;
+      if( (*freq_sample_tracker) >= RELEASE_SAMPLES){
+	  (*freq_sample_tracker) = 0;
+	  return;
+      }
+
+      //(*freq_multiplier) = (RELEASE_ALPHA) * (RELEASE_THRESH - (*freq_multiplier)) + (*freq_multiplier);
+      (*freq_multiplier) = ADSR_table[*freq_sample_tracker];
+
+    // if above if statements are not valid, the multiplier remains fixed (i.e. sustain)
+
+      table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
+
+      if(preWaveshape > 0){
+	  if(preWaveshape == 1) table_val = CHEBYSHEV_4TH_256_DATA[table_val+127];
+	  else if(preWaveshape == 2) table_val = WAVESHAPE_SIGMOID_DATA[table_val+127];
+	  else if(preWaveshape == 3) table_val = WAVESHAPE_TANH_DATA[table_val+127];
+      }
+
+      buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_on * (*freq_multiplier);
+    }
+
 }
 
 void reset_index(float* freq_ind) { freq_ind = 0; }
@@ -704,75 +884,63 @@ int32_t temp_var;
 #define BIT_SMASH_AND	0x0002
 #define BIT_CRUSH_DEPTH	2
 
-void addTableToBuffer(q15_t* buffer, float* freq_inc, float* freq_ind) {
-//  if ((filter_active == 1) && (skipFilter == 0)) {
-//    if (lidarModeActive) {
-//      for (int i = 0; i < BUFFER_SIZE; i++) {
-//        updateLidarInc();
-//        table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
-//        // ew... this code gets messy given that the if statement will be
-//        // checked at 40kHz (LOL)
-//        buffer[i] +=
-//            ampltiude_multiplier * filter_multiplier(&table_val) * SCALE_OUTPUT;
-//      }
-//    } else {
-//      for (int i = 0; i < BUFFER_SIZE; i++) {
-//        // ew... this code gets messy given that the if statement will be
-//        // checked at 40kHz (LOL)
-//        table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
-//        buffer[i] +=
-//            ampltiude_multiplier * filter_multiplier(&table_val) * SCALE_OUTPUT;
-//      }
-//    }
-//  } else {
+void addTableToBuffer(q15_t* buffer, float* freq_inc, float* freq_ind, uint32_t* freq_sample_tracker ,double* freq_multiplier) {
+
     if (lidarModeActive) {
       for (int i = 0; i < BUFFER_SIZE; i++) {
         updateLidarInc();
         table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
 
         if(preWaveshape > 0){
-            if(preWaveshape == 1) table_val = WAVESHAPE_CHEBYSHEV_4TH_256_DATATANH_DATA[table_val+127];
+            if(preWaveshape == 1) table_val = CHEBYSHEV_4TH_256_DATA[table_val+127];
             else if(preWaveshape == 2) table_val = WAVESHAPE_SIGMOID_DATA[table_val+127];
             else if(preWaveshape == 3) table_val = WAVESHAPE_TANH_DATA[table_val+127];
         }
 
         buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_on;
-//
-//	temp_var = (int32_t) (ampltiude_multiplier * table_val * SCALE_OUTPUT);
-
-        //uint16_t randomInt = rand() % 2;
-
-//        if(randomInt == 1){
-//            //buffer[i] +=  ( (int32_t) (ampltiude_multiplier * table_val * SCALE_OUTPUT) ) & (~BIT_SMASH_AND);
-//
-//        }
-//        else
-//          {
-//            //buffer[i] +=  ( (int32_t) (ampltiude_multiplier * table_val * SCALE_OUTPUT) ) | (BIT_SMASH_AND );
-//          }
-        //buffer[i] += ampltiude_multiplier * SCALE_OUTPUT * ( ( ( (int32_t) (table_val) ) >> 2 ) << 2 );
 
       }
     }
     else {
+
+
+
       for (int i = 0; i < BUFFER_SIZE; i++) {
 //        table_val = table_val[WAVESHAPE_CHEBYSHEV_4TH_256_DATATANH_DATA+127];
         //buffer[i] += ampltiude_multiplier * table_val * SCALE_OUTPUT;
         //buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_on;
+//	if( (*freq_sample_tracker) < ATTACK_SAMPLES){
+//	    (*freq_sample_tracker)++;
+//	    (*freq_multiplier) = ADSR_table[freq_sample_tracker];
+//	    //(*freq_multiplier) = (ATTACK_ALPHA) * (ATTACK_THRESH - *freq_multiplier) + (*freq_multiplier);
+//	}
+//	else
+	if( (*freq_sample_tracker) < DELAY_SAMPLES){
+	    (*freq_sample_tracker)++;
+	    (*freq_multiplier) = ADSR_table[*freq_sample_tracker];
+	    //(*freq_multiplier) = (DELAY_ALPHA) * (DELAY_THRESH - *freq_multiplier) + (*freq_multiplier);
+	}else{
+	    (*freq_multiplier) = ADSR_table[*freq_sample_tracker];
+	}
+
+	// if above if statements are not valid, the multiplier remains fixed (i.e. sustain)
 
         table_val = waveTable[incrementIndex(freq_inc, freq_ind)];
 
         if(preWaveshape > 0){
-            if(preWaveshape == 1) table_val = WAVESHAPE_CHEBYSHEV_4TH_256_DATATANH_DATA[table_val+127];
+            if(preWaveshape == 1) table_val = CHEBYSHEV_4TH_256_DATA[table_val+127];
             else if(preWaveshape == 2) table_val = WAVESHAPE_SIGMOID_DATA[table_val+127];
             else if(preWaveshape == 3) table_val = WAVESHAPE_TANH_DATA[table_val+127];
         }
 
-        buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_on;
+        buffer[i] += ( ( (int32_t) (ampltiude_multiplier * (table_val * SCALE_OUTPUT) ) )) * signal_on * (*freq_multiplier);
       }
     }
 
 }
+
+
+
 
 q15_t filter_multiplier(int16_t* waveTable) {
   filter_product =
@@ -801,46 +969,92 @@ uint16_t incrementFilterIndex(float* freq_inc, float* freq_ind) {
 
 void switchOctave(uint8_t des_octave) {
   octave = des_octave;
-  if (des_octave == 4) {
-    freq_1_inc = (NOTE_C4 / DAC_FREQ) * max_table_index;
-    freq_2_inc = (NOTE_C4S / DAC_FREQ) * max_table_index;
-    freq_3_inc = (NOTE_D4 / DAC_FREQ) * max_table_index;
-    freq_4_inc = (NOTE_D4S / DAC_FREQ) * max_table_index;
-    freq_5_inc = (NOTE_E4 / DAC_FREQ) * max_table_index;
-    freq_6_inc = (NOTE_F4 / DAC_FREQ) * max_table_index;
-    freq_7_inc = (NOTE_F4S / DAC_FREQ) * max_table_index;
-    freq_8_inc = (NOTE_G4 / DAC_FREQ) * max_table_index;
-    freq_9_inc = (NOTE_G4S / DAC_FREQ) * max_table_index;
-    freq_10_inc = (NOTE_A4 / DAC_FREQ) * max_table_index;
-    freq_11_inc = (NOTE_A4S / DAC_FREQ) * max_table_index;
-    freq_12_inc = (NOTE_B4 / DAC_FREQ) * max_table_index;
-  } else if (des_octave == 5) {
-    freq_1_inc = (NOTE_C5 / DAC_FREQ) * max_table_index;
-    freq_2_inc = (NOTE_C5S / DAC_FREQ) * max_table_index;
-    freq_3_inc = (NOTE_D5 / DAC_FREQ) * max_table_index;
-    freq_4_inc = (NOTE_D5S / DAC_FREQ) * max_table_index;
-    freq_5_inc = (NOTE_E5 / DAC_FREQ) * max_table_index;
-    freq_6_inc = (NOTE_F5 / DAC_FREQ) * max_table_index;
-    freq_7_inc = (NOTE_F5S / DAC_FREQ) * max_table_index;
-    freq_8_inc = (NOTE_G5 / DAC_FREQ) * max_table_index;
-    freq_9_inc = (NOTE_G5S / DAC_FREQ) * max_table_index;
-    freq_10_inc = (NOTE_A5 / DAC_FREQ) * max_table_index;
-    freq_11_inc = (NOTE_A5S / DAC_FREQ) * max_table_index;
-    freq_12_inc = (NOTE_B5 / DAC_FREQ) * max_table_index;
-  } else if (des_octave == 3) {
-    freq_1_inc = (NOTE_C3 / DAC_FREQ) * max_table_index;
-    freq_2_inc = (NOTE_C3S / DAC_FREQ) * max_table_index;
-    freq_3_inc = (NOTE_D3 / DAC_FREQ) * max_table_index;
-    freq_4_inc = (NOTE_D3S / DAC_FREQ) * max_table_index;
-    freq_5_inc = (NOTE_E3 / DAC_FREQ) * max_table_index;
-    freq_6_inc = (NOTE_F3 / DAC_FREQ) * max_table_index;
-    freq_7_inc = (NOTE_F3S / DAC_FREQ) * max_table_index;
-    freq_8_inc = (NOTE_G3 / DAC_FREQ) * max_table_index;
-    freq_9_inc = (NOTE_G3S / DAC_FREQ) * max_table_index;
-    freq_10_inc = (NOTE_A3 / DAC_FREQ) * max_table_index;
-    freq_11_inc = (NOTE_A3S / DAC_FREQ) * max_table_index;
-    freq_12_inc = (NOTE_B3 / DAC_FREQ) * max_table_index;
+
+  if(playbackStatus == 1){
+      if (des_octave == 4) {
+          freq_1_inc = ( ( ((float) NOTE_C4) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_2_inc = ((((float) NOTE_C4S) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_3_inc = ((((float) NOTE_D4) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_4_inc = ((((float) NOTE_D4S) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_5_inc = ((((float) NOTE_E4) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_6_inc = ((((float) NOTE_F4 )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_7_inc = ((((float) NOTE_F4S) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_8_inc = ((((float) NOTE_G4 )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_9_inc = ((((float) NOTE_G4S) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_10_inc = ((((float) NOTE_A4 )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_11_inc = ((((float) NOTE_A4S) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_12_inc = ((((float) NOTE_B4) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+        } else if (des_octave == 5) {
+          freq_1_inc = ((((float) NOTE_C5) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_2_inc = ((((float) NOTE_C5S) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_3_inc = ((((float) NOTE_D5) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_4_inc = ((((float) NOTE_D5S )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_5_inc = ((((float) NOTE_E5) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_6_inc = ((((float) NOTE_F5) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_7_inc = ((((float) NOTE_F5S )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_8_inc = ((((float) NOTE_G5 )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_9_inc = ((((float) NOTE_G5S )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_10_inc = ((((float) NOTE_A5 )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_11_inc = ((((float) NOTE_A5S )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_12_inc = ((((float) NOTE_B5 )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+        } else if (des_octave == 3) {
+          freq_1_inc = ((((float) NOTE_C3) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_2_inc = ((((float) NOTE_C3S) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_3_inc = ((((float) NOTE_D3 )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_4_inc = ((((float) NOTE_D3S) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_5_inc = ((((float) NOTE_E3 )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_6_inc = ((((float) NOTE_F3 )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_7_inc = ((((float) NOTE_F3S)/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_8_inc = ((((float) NOTE_G3) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_9_inc = ((((float) NOTE_G3S )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_10_inc = ((((float) NOTE_A3 )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_11_inc = ((((float) NOTE_A3S) / DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+          freq_12_inc = ((((float) NOTE_B3 )/ DAC_FREQ) * max_table_index) / PLAYBACK_DIV;
+        }
   }
+  else{
+      if (des_octave == 4) {
+          freq_1_inc = (((float) NOTE_C4) / DAC_FREQ) * max_table_index;
+          freq_2_inc = (((float) NOTE_C4S) / DAC_FREQ) * max_table_index;
+          freq_3_inc = (((float) NOTE_D4) / DAC_FREQ) * max_table_index;
+          freq_4_inc = (((float) NOTE_D4S) / DAC_FREQ) * max_table_index;
+          freq_5_inc = (((float) NOTE_E4) / DAC_FREQ) * max_table_index;
+          freq_6_inc = (((float) NOTE_F4 )/ DAC_FREQ) * max_table_index;
+          freq_7_inc = (((float) NOTE_F4S )/ DAC_FREQ) * max_table_index;
+          freq_8_inc = (((float) NOTE_G4 )/ DAC_FREQ) * max_table_index;
+          freq_9_inc = (((float) NOTE_G4S )/ DAC_FREQ) * max_table_index;
+          freq_10_inc = (((float) NOTE_A4 )/ DAC_FREQ) * max_table_index;
+          freq_11_inc = (((float) NOTE_A4S )/ DAC_FREQ) * max_table_index;
+          freq_12_inc = (((float) NOTE_B4) / DAC_FREQ) * max_table_index;
+        } else if (des_octave == 5) {
+          freq_1_inc = (((float) NOTE_C5 )/ DAC_FREQ) * max_table_index;
+          freq_2_inc = (((float) NOTE_C5S )/ DAC_FREQ) * max_table_index;
+          freq_3_inc = (((float) NOTE_D5 )/ DAC_FREQ) * max_table_index;
+          freq_4_inc = (((float) NOTE_D5S )/ DAC_FREQ) * max_table_index;
+          freq_5_inc = (((float) NOTE_E5) / DAC_FREQ) * max_table_index;
+          freq_6_inc = (((float) NOTE_F5 )/ DAC_FREQ) * max_table_index;
+          freq_7_inc = (((float) NOTE_F5S )/ DAC_FREQ) * max_table_index;
+          freq_8_inc = (((float) NOTE_G5) / DAC_FREQ) * max_table_index;
+          freq_9_inc = (((float) NOTE_G5S )/ DAC_FREQ) * max_table_index;
+          freq_10_inc = (((float) NOTE_A5) / DAC_FREQ) * max_table_index;
+          freq_11_inc = (((float) NOTE_A5S) / DAC_FREQ) * max_table_index;
+          freq_12_inc = (((float) NOTE_B5 )/ DAC_FREQ) * max_table_index;
+        } else if (des_octave == 3) {
+          freq_1_inc = (((float) NOTE_C3 )/ DAC_FREQ) * max_table_index;
+          freq_2_inc = (((float) NOTE_C3S) / DAC_FREQ) * max_table_index;
+          freq_3_inc = (((float) NOTE_D3 )/ DAC_FREQ) * max_table_index;
+          freq_4_inc = (((float) NOTE_D3S )/ DAC_FREQ) * max_table_index;
+          freq_5_inc = (((float) NOTE_E3 )/ DAC_FREQ) * max_table_index;
+          freq_6_inc = (((float) NOTE_F3 )/ DAC_FREQ) * max_table_index;
+          freq_7_inc = (((float) NOTE_F3S )/ DAC_FREQ) * max_table_index;
+          freq_8_inc = (((float) NOTE_G3 )/ DAC_FREQ) * max_table_index;
+          freq_9_inc = (((float) NOTE_G3S) / DAC_FREQ) * max_table_index;
+          freq_10_inc = (((float) NOTE_A3 )/ DAC_FREQ) * max_table_index;
+          freq_11_inc = (((float) NOTE_A3S )/ DAC_FREQ) * max_table_index;
+          freq_12_inc = (((float) NOTE_B3 )/ DAC_FREQ) * max_table_index;
+        }
+  }
+
 }
 
 void incrementOctave(void) {
@@ -879,9 +1093,158 @@ void applyWaveshape(q15_t* buffer, uint16_t size){
 
     index = round(255 * (buffer[i] - LOWER_BOUND) / ((float) UPPER_BOUND - LOWER_BOUND));
 
-    if(postWaveshape == 1) buffer[i] = WAVESHAPE_CHEBYSHEV_4TH_256_DATATANH_DATA[index];
+    if(postWaveshape == 1) buffer[i] = CHEBYSHEV_4TH_256_DATA[index];
     else if(postWaveshape == 2) buffer[i] = WAVESHAPE_SIGMOID_DATA[index];
     else if(postWaveshape == 3) buffer[i] = WAVESHAPE_TANH_DATA[index];
   }
 }
+
+void nullTracker(uint8_t key){
+  switch(key){
+      case 1:
+  	freq_1_sample_tracker = 0;
+  	freq_1_multiplier = 0;
+            break;
+      case 2:
+	freq_2_sample_tracker = 0;
+	  	freq_2_multiplier = 0;
+            break;
+      case 3:
+	freq_3_sample_tracker = 0;
+	  	freq_3_multiplier = 0;
+            break;
+      case 4:
+	freq_4_sample_tracker = 0;
+	  	freq_4_multiplier = 0;
+            break;
+      case 5:
+	freq_5_sample_tracker = 0;
+	  	freq_5_multiplier = 0;
+            break;
+      case 6:
+	freq_6_sample_tracker = 0;
+	  	freq_6_multiplier = 0;
+            break;
+      case 7:
+	freq_7_sample_tracker = 0;
+	  	freq_7_multiplier = 0;
+            break;
+      case 8:
+	freq_8_sample_tracker = 0;
+	  	freq_8_multiplier = 0;
+            break;
+      case 9:
+	freq_9_sample_tracker = 0;
+	  	freq_9_multiplier = 0;
+            break;
+      case 10:
+	freq_10_sample_tracker = 0;
+	  	freq_10_multiplier = 0;
+            break;
+      case 11:
+	freq_11_sample_tracker = 0;
+	  	freq_11_multiplier = 0;
+            break;
+      case 12:
+	freq_12_sample_tracker = 0;
+	  	freq_12_multiplier = 0;
+            break;
+      default:
+        break;
+    }
+}
+
+void resetFrequencyInd(uint8_t key){
+  switch(key){
+    case 1:
+          freq_1_ind = 0;
+          break;
+    case 2:
+          freq_2_ind = 0;
+          break;
+    case 3:
+          freq_3_ind = 0;
+          break;
+    case 4:
+          freq_4_ind = 0;
+          break;
+    case 5:
+          freq_5_ind = 0;
+          break;
+    case 6:
+          freq_6_ind = 0;
+          break;
+    case 7:
+          freq_7_ind = 0;
+          break;
+    case 8:
+          freq_8_ind = 0;
+          break;
+    case 9:
+          freq_9_ind = 0;
+          break;
+    case 10:
+          freq_10_ind = 0;
+          break;
+    case 11:
+          freq_11_ind = 0;
+          break;
+    case 12:
+          freq_12_ind = 0;
+          break;
+    default:
+      break;
+  }
+}
+
+
+
+q15_t* recordingOffsetPointer;
+
+void startRecording(void){
+  recordingStatus = 1;
+  offset = 0;
+  recordingIndex = 0;
+  recordingIndex = 0;
+  recordingOffsetPointer = recording;
+}
+
+void stopRecording(void){
+  recordingStatus = 0;
+}
+
+void recordBuffer(q15_t* buffer, uint32_t size){
+  if((offset+size) >= (2*MAX_RECORDING_SIZE)){
+      stopRecording();
+      Set_LED(BUTTON_7_G_REG, BUTTON_7_G_PIN, 0);
+      Set_LED(BUTTON_7_R_REG, BUTTON_7_R_PIN, 1);
+      return;
+  }
+
+  memcpy(recordingOffsetPointer, buffer, size);
+
+  recordingOffsetPointer += size >> 1;
+  offset += size;
+}
+
+void stopPlayback(void){
+  playbackStatus = 0;
+  setTable(currentTable);
+}
+
+void startPlayback(void){
+  playbackStatus = 1;
+  //switchTable(recording, offset >> 1);
+}
+
+q15_t addPlayback(void){
+
+  recordingIndex++;
+  if(recordingIndex >= (offset >> 1)){
+      recordingIndex = 0;
+  }
+
+  return recording[recordingIndex];
+}
+
 
