@@ -39224,7 +39224,7 @@ void HALL_Handler(void){
 
 	if(POV_intTracker == HALF_MAGNET_CNT){
  800f938:	7813      	ldrb	r3, [r2, #0]
- 800f93a:	2b03      	cmp	r3, #3
+ 800f93a:	2b07      	cmp	r3, #7
  800f93c:	d018      	beq.n	800f970 <HALL_Handler+0x6c>
  800f93e:	bd10      	pop	{r4, pc}
 	else if(countDown){ //can remove this "if check" once confident code works properly

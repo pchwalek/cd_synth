@@ -6,8 +6,11 @@
 #include "stm32l4xx_hal_uart.h"
 #include "usart.h"
 
-#define TICK_THRESH				2
-#define HALF_MAGNET_CNT			3
+//#define TICK_THRESH				2
+//#define HALF_MAGNET_CNT			3
+
+#define TICK_THRESH			6
+#define HALF_MAGNET_CNT			7
 
 //#define TIME_TO_ACTIVATE_POV
 
